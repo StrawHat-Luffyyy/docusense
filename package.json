@@ -1,0 +1,17 @@
+{
+  "name": "docusense",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "turbo dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "packageManager": "pnpm@11.3.0",
+  "devDependencies": {
+    "turbo": "^2.9.16"
+  }
+}
