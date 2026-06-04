@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -7,6 +8,8 @@ import { pinoHttp } from "pino-http";
 import { env } from "./config/env.js";
 import { logger } from "./utils/logger.js";
 import { errorHandler, AppError } from "./middleware/errorHandler.js";
+import { db } from "./config/database.js";
+import { redis } from "./config/redis.js";
 
 const app = express();
 
@@ -34,14 +37,30 @@ app.use(
   }),
 );
 
-app.get("/api/health", (req: Request, res: Response) => {
-  res.status(200).json({
-    status: "success",
-    timestamp: new Date().toISOString(),
-    service: "@docusense/api",
-  });
+app.get("/api/health", async (req: Request, res: Response) => {
+  try {
+    await db.$queryRaw`SELECT 1`;
+    if (redis.status !== "ready") {
+      await redis.connect();
+    }
+    await redis.ping();
+    res.status(200).json({
+      status: "ok",
+      version: "1.0.0",
+      timestamp: new Date().toISOString(),
+      db: "ok",
+      redis: "ok",
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Health Check Failed");
+    res.status(503).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      db: "error",
+      redis: "error",
+    });
+  }
 });
-
 // Test route to verify the error handler
 app.get("/api/test-error", () => {
   throw new AppError(400, "This is a test validation error");

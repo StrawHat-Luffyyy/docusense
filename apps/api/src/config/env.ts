@@ -6,6 +6,8 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().default(4000),
   ALLOW_ORIGINS: z.string().default("http://localhost:3000"),
+  DATABASE_URL: z.string().url(),
+  REDIS_URL:z.string().url().default('redis://localhost:6379'),
 });
 
 const _env = envSchema.safeParse(process.env);
