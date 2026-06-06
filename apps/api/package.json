@@ -6,12 +6,12 @@
   "packageManager": "pnpm@11.3.0",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
-  "typecheck": "tsc --noEmit",
   "keywords": [],
   "author": "",
   "license": "ISC",
