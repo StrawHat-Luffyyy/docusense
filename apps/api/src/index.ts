@@ -10,6 +10,12 @@ import { logger } from "./utils/logger.js";
 import { errorHandler, AppError } from "./middleware/errorHandler.js";
 import { db } from "./config/database.js";
 import { redis } from "./config/redis.js";
+import { clerkMiddleware } from "@clerk/express";
+import {
+  requireAuth,
+  injectTenantContext,
+  requireRole,
+} from "./middleware/auth.middleware.js";
 
 const app = express();
 
@@ -35,6 +41,30 @@ app.use(
     genReqId: (req: { headers: { [x: string]: any } }) =>
       req.headers["x-correlation-id"],
   }),
+);
+app.use(clerkMiddleware());
+
+app.get(
+  "/api/protected",
+  requireAuth,
+  injectTenantContext,
+  (req: Request, res: Response) => {
+    res.status(200).json({
+      message: "Access granted",
+      tenantId: req.tenantId,
+      role: req.tenantRole,
+    });
+  },
+);
+// Admin-only test route
+app.post(
+  "/api/admin-only",
+  requireAuth,
+  injectTenantContext,
+  requireRole(["ADMIN", "OWNER"]),
+  (req: Request, res: Response) => {
+    res.status(200).json({ message: "Welcome, Admin." });
+  },
 );
 
 app.get("/api/health", async (req: Request, res: Response) => {
