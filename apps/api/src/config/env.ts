@@ -7,7 +7,12 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   ALLOW_ORIGINS: z.string().default("http://localhost:3000"),
   DATABASE_URL: z.string().url(),
-  REDIS_URL:z.string().url().default('redis://localhost:6379'),
+  REDIS_URL: z.string().url().default("redis://localhost:6379"),
+
+  //Clerk
+  CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_SECRET_KEY: z.string().min(1),
+  CLERK_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);
