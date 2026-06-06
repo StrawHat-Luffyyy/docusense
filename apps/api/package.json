@@ -8,6 +8,10 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "typecheck": "tsc --noEmit",
   "keywords": [],
   "author": "",
   "license": "ISC",

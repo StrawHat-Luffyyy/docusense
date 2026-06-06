@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "turbo dev"
+    "dev": "turbo dev",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +13,11 @@
   "type": "module",
   "packageManager": "pnpm@11.3.0",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^9.39.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.3",
     "turbo": "^2.9.16"
   }
 }
