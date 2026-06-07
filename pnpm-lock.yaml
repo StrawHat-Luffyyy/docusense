@@ -58,6 +58,9 @@ importers:
       pino-http:
         specifier: ^11.0.0
         version: 11.0.0
+      svix:
+        specifier: ^1.95.1
+        version: 1.95.1
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -7103,6 +7106,12 @@ packages:
       }
     engines: { node: ">= 0.4" }
 
+  svix@1.95.1:
+    resolution:
+      {
+        integrity: sha512-Vtsbzsvs4lzXJneruB5HiZmV7dlhAjbo6dGid2Qxi9bv+LutLz7Yt3NORI4SYqRTNWPhVoFAA8TG/WXB+mIzNQ==,
+      }
+
   tagged-tag@1.0.0:
     resolution:
       {
@@ -12250,6 +12259,10 @@ snapshots:
       has-flag: 4.0.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
+
+  svix@1.95.1:
+    dependencies:
+      standardwebhooks: 1.0.0
 
   tagged-tag@1.0.0: {}
 

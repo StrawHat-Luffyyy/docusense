@@ -16,6 +16,8 @@ import {
   injectTenantContext,
   requireRole,
 } from "./middleware/auth.middleware.js";
+import { webhookRouter } from "./routes/webhooks.route.js";
+import { authRouter } from "./routes/auth.route.js";
 
 const app = express();
 
@@ -34,6 +36,7 @@ app.use(
     credentials: true,
   }),
 );
+app.use("/api/webhooks", webhookRouter);
 app.use(express.json({ limit: "1mb" }));
 app.use(
   pinoHttp({
@@ -91,6 +94,8 @@ app.get("/api/health", async (req: Request, res: Response) => {
     });
   }
 });
+// Mount auth routes
+app.use("/api/auth", authRouter);
 // Test route to verify the error handler
 app.get("/api/test-error", () => {
   throw new AppError(400, "This is a test validation error");
