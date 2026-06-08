@@ -5,7 +5,7 @@ import { db } from "../config/database.js";
 
 export const authRouter = express.Router();
 authRouter.post(
-  "sync",
+  "/sync",
   requireAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
