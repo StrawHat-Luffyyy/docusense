@@ -18,6 +18,7 @@ import {
 } from "./middleware/auth.middleware.js";
 import { webhookRouter } from "./routes/webhooks.route.js";
 import { authRouter } from "./routes/auth.route.js";
+import { documentsRouter } from "./routes/documents.route.js";
 
 const app = express();
 
@@ -96,6 +97,7 @@ app.get("/api/health", async (req: Request, res: Response) => {
 });
 // Mount auth routes
 app.use("/api/auth", authRouter);
+app.use("/api/documents", documentsRouter);
 // Test route to verify the error handler
 app.get("/api/test-error", () => {
   throw new AppError(400, "This is a test validation error");
