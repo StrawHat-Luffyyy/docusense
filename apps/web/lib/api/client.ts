@@ -7,7 +7,24 @@ export const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use((config) => {
+// Store the Clerk instance for use in interceptors
+let clerkTokenGetter: (() => Promise<string | null>) | null = null;
+
+export function setClerkTokenGetter(getter: () => Promise<string | null>) {
+  clerkTokenGetter = getter;
+}
+
+apiClient.interceptors.request.use(async (config) => {
+  if (clerkTokenGetter) {
+    try {
+      const token = await clerkTokenGetter();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error("Failed to get Clerk token:", error);
+    }
+  }
   return config;
 });
 

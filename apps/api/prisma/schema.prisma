@@ -7,6 +7,80 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id          String               @id
+  email       String               @unique
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  firstName   String?
+  imageUrl    String?
+  lastName    String?
+  memberships OrganizationMember[]
+}
+
+model Organization {
+  id               String               @id @default(uuid())
+  clerkOrgId       String               @unique
+  name             String
+  slug             String               @unique
+  imageUrl         String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  storageUsedBytes Int                  @default(0)
+  documents        Document[]
+  members          OrganizationMember[]
+
+  @@index([clerkOrgId])
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  role           Role         @default(MEMBER)
+  userId         String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Document {
+  id              String          @id @default(uuid())
+  filename        String
+  mimeType        String
+  sizeBytes       Int
+  status          DocumentStatus  @default(PENDING)
+  storageKey      String
+  pageCount       Int?
+  wordCount       Int?
+  chunkCount      Int?
+  processingError String?
+  indexedAt       DateTime?
+  organizationId  String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chunks          DocumentChunk[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model DocumentChunk {
+  id         String   @id @default(uuid())
+  content    String
+  chunkIndex Int
+  pageNumber Int?
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
 enum Role {
   OWNER
   ADMIN
@@ -19,90 +93,4 @@ enum DocumentStatus {
   FAILED
   DELETED
   INDEXED
-}
-
-model User {
-  id        String  @id
-  email     String  @unique
-  firstName String?
-  lastName  String?
-  imageUrl  String?
-
-  memberships OrganizationMember[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Organization {
-  id               String  @id @default(uuid())
-  clerkOrgId       String  @unique
-  name             String
-  slug             String  @unique
-  imageUrl         String?
-  storageUsedBytes Int     @default(0)
-
-  members   OrganizationMember[]
-  documents Document[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([clerkOrgId])
-}
-
-model OrganizationMember {
-  id   String @id @default(uuid())
-  role Role   @default(MEMBER)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, organizationId])
-  @@index([userId])
-  @@index([organizationId])
-}
-
-model Document {
-  id         String         @id @default(uuid())
-  filename   String
-  mimeType   String
-  sizeBytes  Int
-  status     DocumentStatus @default(PENDING)
-  storageKey String
-
-  pageCount       Int?
-  wordCount       Int?
-  chunkCount      Int?
-  processingError String?
-  indexedAt       DateTime?
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  chunks DocumentChunk[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId, status])
-  @@index([organizationId, createdAt(sort: Desc)])
-}
-
-model DocumentChunk {
-  id         String @id @default(uuid())
-  content    String 
-  chunkIndex Int
-  pageNumber Int?
-
-  documentId String
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  @@index([documentId])
 }

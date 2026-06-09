@@ -38,3 +38,6 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+UPLOAD_FIX_GUIDE.md
+FIX_REPORT.md

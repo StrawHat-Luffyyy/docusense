@@ -2,9 +2,20 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
-import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkProvider, useAuth } from "@clerk/nextjs";
+import { setClerkTokenGetter } from "@/lib/api/client";
+
+function ClerkTokenInitializer({ children }: { children: React.ReactNode }) {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    setClerkTokenGetter(() => getToken());
+  }, [getToken]);
+
+  return <>{children}</>;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,12 +32,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <ClerkProvider>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <Toaster position="bottom-right" richColors />
-        </QueryClientProvider>
-      </ThemeProvider>
+      <ClerkTokenInitializer>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <QueryClientProvider client={queryClient}>
+            {children}
+            <Toaster position="bottom-right" richColors />
+          </QueryClientProvider>
+        </ThemeProvider>
+      </ClerkTokenInitializer>
     </ClerkProvider>
   );
 }

@@ -36,7 +36,7 @@ documentsRouter.post(
         storageKey,
         contentType,
       );
-      const documnet = await db.document.create({
+      const document = await db.document.create({
         data: {
           id: documentId,
           filename: sanitizedFilename,
