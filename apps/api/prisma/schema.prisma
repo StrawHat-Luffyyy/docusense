@@ -13,6 +13,14 @@ enum Role {
   MEMBER
 }
 
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  FAILED
+  DELETED
+  INDEXED
+}
+
 model User {
   id        String  @id
   email     String  @unique
@@ -27,13 +35,15 @@ model User {
 }
 
 model Organization {
-  id         String  @id @default(uuid())
-  clerkOrgId String  @unique
-  name       String
-  slug       String  @unique
-  imageUrl   String?
+  id               String  @id @default(uuid())
+  clerkOrgId       String  @unique
+  name             String
+  slug             String  @unique
+  imageUrl         String?
+  storageUsedBytes Int     @default(0)
 
-  members OrganizationMember[]
+  members   OrganizationMember[]
+  documents Document[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -57,4 +67,42 @@ model OrganizationMember {
   @@unique([userId, organizationId])
   @@index([userId])
   @@index([organizationId])
+}
+
+model Document {
+  id         String         @id @default(uuid())
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  status     DocumentStatus @default(PENDING)
+  storageKey String
+
+  pageCount       Int?
+  wordCount       Int?
+  chunkCount      Int?
+  processingError String?
+  indexedAt       DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  chunks DocumentChunk[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model DocumentChunk {
+  id         String @id @default(uuid())
+  content    String 
+  chunkIndex Int
+  pageNumber Int?
+
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
 }

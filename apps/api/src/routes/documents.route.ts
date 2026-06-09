@@ -22,7 +22,7 @@ documentsRouter.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { filename, contentType, sizeBytes } = req.body;
-      const tenantId = req.tenantId;
+      const tenantId = req.tenantId!;
       if (!ALLOWED_MIME_TYPES.includes(contentType)) {
         return res.status(400).json({ error: "File type not supported" });
       }
@@ -36,7 +36,17 @@ documentsRouter.post(
         storageKey,
         contentType,
       );
-      //TODO: Create a pending document record in the database with status 'uploading'
+      const documnet = await db.document.create({
+        data: {
+          id: documentId,
+          filename: sanitizedFilename,
+          mimeType: contentType,
+          sizeBytes,
+          storageKey,
+          status: "PENDING",
+          organizationId: tenantId,
+        },
+      });
       res.status(200).json({
         documentId,
         uploadUrl,
