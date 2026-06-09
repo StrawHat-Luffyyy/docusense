@@ -6,8 +6,8 @@ export default function UploadPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Upload Document</h1>
         <p className="text-zinc-500 mt-2">
-          Securely upload a document to your organization's private knowledge
-          base.
+          Securely upload a document to your organization&apos;s private
+          knowledge base.
         </p>
       </div>
 

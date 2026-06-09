@@ -4,8 +4,8 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useAuth } from "@clerk/nextjs";
 import { apiClient } from "@/lib/api/client";
-import axios from "axios";
-import { UploadCloud, File, Loader2, CheckCircle, XCircle } from "lucide-react";
+import axios, { AxiosError } from "axios";
+import { UploadCloud, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type UploadState = "idle" | "uploading" | "success" | "error";
@@ -15,76 +15,83 @@ export function UploadDropzone() {
   const [progress, setProgress] = useState(0);
   const { getToken, orgId } = useAuth();
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      if (!file) return;
 
-    setUploadState("uploading");
-    setProgress(0);
+      setUploadState("uploading");
+      setProgress(0);
 
-    try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
-      if (!orgId) {
-        throw new Error(
-          "No active organization. Please select an organization to upload documents.",
-        );
-      }
-
-      const initResponse = await apiClient.post(
-        "/api/documents/upload/init",
-        {
-          filename: file.name,
-          contentType: file.type,
-          mimeType: file.type, // Added to match the Prisma Document schema expectations
-          sizeBytes: file.size,
-          organizationId: orgId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-organization-id": orgId, // Passes org context commonly expected by Clerk backend middlewares
-          },
-        },
-      );
-      const { uploadUrl, documentId } = initResponse.data;
-      await axios.put(uploadUrl, file, {
-        headers: {
-          "Content-Type": file.type,
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total,
-            );
-            setProgress(percentCompleted);
-          }
-        },
-      });
-      setUploadState("success");
-      toast.success("Document uploaded successfully!");
-    } catch (error: any) {
-      console.error("Upload failed:", error);
-      setUploadState("error");
-
-      // Extract error message from response
-      let errorMessage = "Failed to upload document";
-      if (error.response?.data?.error) {
-        if (typeof error.response.data.error === "string") {
-          errorMessage = error.response.data.error;
-        } else if (error.response.data.error?.message) {
-          errorMessage = error.response.data.error.message;
+      try {
+        const token = await getToken();
+        if (!token) {
+          throw new Error("Not authenticated");
         }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
 
-      toast.error(errorMessage);
-    }
-  }, []);
+        if (!orgId) {
+          throw new Error(
+            "No active organization. Please select an organization to upload documents.",
+          );
+        }
+
+        const initResponse = await apiClient.post(
+          "/api/documents/upload/init",
+          {
+            filename: file.name,
+            contentType: file.type,
+            mimeType: file.type, // Added to match the Prisma Document schema expectations
+            sizeBytes: file.size,
+            organizationId: orgId,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "x-organization-id": orgId, // Passes org context commonly expected by Clerk backend middlewares
+            },
+          },
+        );
+        const { uploadUrl } = initResponse.data;
+        await axios.put(uploadUrl, file, {
+          headers: {
+            "Content-Type": file.type,
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total,
+              );
+              setProgress(percentCompleted);
+            }
+          },
+        });
+        setUploadState("success");
+        toast.success("Document uploaded successfully!");
+      } catch (error: unknown) {
+        console.error("Upload failed:", error);
+        setUploadState("error");
+
+        let errorMessage = "Failed to upload document";
+
+        if (axios.isAxiosError(error)) {
+          const apiError = error.response?.data?.error;
+
+          if (typeof apiError === "string") {
+            errorMessage = apiError;
+          } else if (apiError?.message) {
+            errorMessage = apiError.message;
+          } else {
+            errorMessage = error.message;
+          }
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+
+        toast.error(errorMessage);
+      }
+    },
+    [getToken, orgId],
+  );
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: 1,

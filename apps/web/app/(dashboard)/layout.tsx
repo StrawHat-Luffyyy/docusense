@@ -11,7 +11,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { isLoaded, isSignedIn, orgId } = useAuth();
-  const { isLoading, isSyncing } = useAuthSync();
+  const { isSyncing } = useAuthSync();
 
   if (!isLoaded) {
     return (
