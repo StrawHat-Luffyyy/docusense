@@ -3,6 +3,8 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
+  S3ServiceException,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "../config/env.js";
@@ -45,5 +47,26 @@ export const s3Service = {
       Key: key,
     });
     await s3Client.send(command);
+  },
+  async checkObjectExists(key: string): Promise<boolean> {
+    try {
+      const command = new HeadObjectCommand({
+        Bucket: env.AWS_S3_BUCKET,
+        Key: key,
+      });
+      await s3Client.send(command);
+      return true;
+    } catch (error) {
+      if (error instanceof S3ServiceException) {
+        if (
+          error.name === "NotFound" ||
+          error.$metadata.httpStatusCode === 404
+        ) {
+          return false;
+        }
+      }
+
+      throw error;
+    }
   },
 };

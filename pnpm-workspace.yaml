@@ -3,8 +3,9 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
-  '@prisma/engines': false
+  "@prisma/engines": false
   esbuild: false
+  msgpackr-extract: false
   msw: false
   prisma: false
   sharp: false

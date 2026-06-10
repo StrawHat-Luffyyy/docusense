@@ -51,7 +51,7 @@ export function UploadDropzone() {
             },
           },
         );
-        const { uploadUrl } = initResponse.data;
+        const { uploadUrl, documentId } = initResponse.data;
         await axios.put(uploadUrl, file, {
           headers: {
             "Content-Type": file.type,
@@ -65,8 +65,13 @@ export function UploadDropzone() {
             }
           },
         });
+        await apiClient.post(
+          `/api/documents/${documentId}/process`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
         setUploadState("success");
-        toast.success("Document uploaded successfully!");
+        toast.success("Document uploaded and queued for processing!");
       } catch (error: unknown) {
         console.error("Upload failed:", error);
         setUploadState("error");
