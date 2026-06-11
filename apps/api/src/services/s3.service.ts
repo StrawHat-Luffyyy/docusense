@@ -40,6 +40,22 @@ export const s3Service = {
     });
     return getSignedUrl(s3Client, command, { expiresIn: 600 });
   },
+  async getObjectBuffer(key: string): Promise<Buffer> {
+    const command = new GetObjectCommand({
+      Bucket: env.AWS_S3_BUCKET,
+      Key: key,
+    });
+    const response = await s3Client.send(command);
+    if (!response.Body) {
+      throw new Error("No data returned from S3");
+    }
+
+    const byteArray = await response.Body?.transformToByteArray();
+    if (!byteArray) {
+      throw new Error("Failed to download object body from S3");
+    }
+    return Buffer.from(byteArray);
+  },
 
   async deleteObject(key: string): Promise<void> {
     const command = new DeleteObjectCommand({
