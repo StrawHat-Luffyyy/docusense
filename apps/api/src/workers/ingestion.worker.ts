@@ -51,7 +51,7 @@ const worker = new Worker(
       throw error;
     }
   },
-  { connection: redis }, // ✅ moved here from process.on
+  { connection: redis },
 );
 
 worker.on("ready", () => {
@@ -62,4 +62,4 @@ process.on("SIGTERM", async () => {
   logger.info("Shutting down worker...");
   await worker.close();
   process.exit(0);
-}); // ✅ no third argument
+});
