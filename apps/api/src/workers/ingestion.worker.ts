@@ -4,6 +4,7 @@ import { db } from "../config/database.js";
 import { s3Service } from "../services/s3.service.js";
 import { logger } from "../utils/logger.js";
 import { INGESTION_QUEUE_NAME } from "../queues/ingestion.queue.js";
+import { chunkingService } from "../services/chunking.service.js";
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -25,16 +26,31 @@ const worker = new Worker(
 
       logger.info(`Extracted ${pdfData.numpages} pages from document`);
 
+      logger.debug("Chunking text...");
+      const chunks = await chunkingService.splitText(rawText);
+      logger.info(`Generated ${chunks.length} chunks from document`);
+
+      logger.debug("Saving chunks to database...");
+
+      const chunkData = chunks.map((content, index) => ({
+        documentId: documentId,
+        content: content,
+        chunkIndex: index,
+      }));
+      await db.documentChunk.createMany({
+        data: chunkData,
+      });
+
       await db.document.update({
         where: { id: documentId },
         data: {
-          status: "INDEXED",
           pageCount: pdfData.numpages,
+          chunkCount: chunks.length,
         },
       });
       logger.info(
         { documentId },
-        "Job Complete: Document Processed Successfully",
+        " Job Step Complete: Text Extracted and Chunked",
       );
     } catch (error: any) {
       logger.error({ err: error, documentId }, "Job Failed");
