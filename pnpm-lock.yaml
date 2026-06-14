@@ -39,7 +39,10 @@ importers:
         version: 2.1.23(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       "@langchain/textsplitters":
         specifier: ^1.0.1
-        version: 1.0.1(@langchain/core@1.1.48)
+        version: 1.0.1(@langchain/core@1.1.48(openai@6.42.0(zod@4.4.3)))
+      "@pinecone-database/pinecone":
+        specifier: ^7.2.0
+        version: 7.2.0
       "@prisma/adapter-pg":
         specifier: ^7.8.0
         version: 7.8.0
@@ -64,6 +67,9 @@ importers:
       ioredis:
         specifier: 5.10.1
         version: 5.10.1
+      openai:
+        specifier: ^6.42.0
+        version: 6.42.0(zod@4.4.3)
       pdf-parse:
         specifier: 1.1.1
         version: 1.1.1
@@ -1679,6 +1685,13 @@ packages:
       {
         integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==,
       }
+
+  "@pinecone-database/pinecone@7.2.0":
+    resolution:
+      {
+        integrity: sha512-urGsnNDWSSqSaWdyEF2P6V5bTNtRA6yMQTheFYAKKwk7mkloRBBETtT2ADF5Y8gJTr88pW5D8NTcCCLe+f0e2Q==,
+      }
+    engines: { node: ">=20.0.0" }
 
   "@pinojs/redact@0.4.0":
     resolution:
@@ -6442,6 +6455,20 @@ packages:
       }
     engines: { node: ">=20" }
 
+  openai@6.42.0:
+    resolution:
+      {
+        integrity: sha512-1WFEt/uXMXOLhYRNkgJWo08Y2YNvNwpVU72K7ibrWgWpNOXd4VojXLbe6SQ4bLiUQ3Y8jz4IiyVkylJCL1DtZg==,
+      }
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   optionator@0.9.4:
     resolution:
       {
@@ -9078,12 +9105,12 @@ snapshots:
 
   "@kurkle/color@0.3.4": {}
 
-  "@langchain/core@1.1.48":
+  "@langchain/core@1.1.48(openai@6.42.0(zod@4.4.3))":
     dependencies:
       "@cfworker/json-schema": 4.1.1
       "@standard-schema/spec": 1.1.0
       js-tiktoken: 1.0.21
-      langsmith: 0.7.7
+      langsmith: 0.7.7(openai@6.42.0(zod@4.4.3))
       mustache: 4.2.0
       p-queue: 6.6.2
       zod: 4.4.3
@@ -9094,9 +9121,9 @@ snapshots:
       - openai
       - ws
 
-  "@langchain/textsplitters@1.0.1(@langchain/core@1.1.48)":
+  "@langchain/textsplitters@1.0.1(@langchain/core@1.1.48(openai@6.42.0(zod@4.4.3)))":
     dependencies:
-      "@langchain/core": 1.1.48
+      "@langchain/core": 1.1.48(openai@6.42.0(zod@4.4.3))
       js-tiktoken: 1.0.21
 
   "@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)":
@@ -9221,6 +9248,8 @@ snapshots:
       outvariant: 1.4.3
 
   "@open-draft/until@2.1.0": {}
+
+  "@pinecone-database/pinecone@7.2.0": {}
 
   "@pinojs/redact@0.4.0": {}
 
@@ -12039,9 +12068,11 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  langsmith@0.7.7:
+  langsmith@0.7.7(openai@6.42.0(zod@4.4.3)):
     dependencies:
       p-queue: 6.6.2
+    optionalDependencies:
+      openai: 6.42.0(zod@4.4.3)
 
   language-subtag-registry@0.3.23: {}
 
@@ -12414,6 +12445,10 @@ snapshots:
       is-inside-container: 1.0.0
       powershell-utils: 0.1.0
       wsl-utils: 0.3.1
+
+  openai@6.42.0(zod@4.4.3):
+    optionalDependencies:
+      zod: 4.4.3
 
   optionator@0.9.4:
     dependencies:

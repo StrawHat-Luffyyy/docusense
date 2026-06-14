@@ -5,6 +5,8 @@ import { s3Service } from "../services/s3.service.js";
 import { logger } from "../utils/logger.js";
 import { INGESTION_QUEUE_NAME } from "../queues/ingestion.queue.js";
 import { chunkingService } from "../services/chunking.service.js";
+import { embeddingService } from "../services/embedding.service.js";
+import { pineconeService } from "../services/pinecone.service.js";
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -40,18 +42,37 @@ const worker = new Worker(
       await db.documentChunk.createMany({
         data: chunkData,
       });
-
-      await db.document.update({
-        where: { id: documentId },
-        data: {
-          pageCount: pdfData.numpages,
-          chunkCount: chunks.length,
+      const savedChunks = await db.documentChunk.findMany({
+        where: {
+          documentId,
+        },
+        orderBy: {
+          chunkIndex: "asc",
         },
       });
-      logger.info(
-        { documentId },
-        " Job Step Complete: Text Extracted and Chunked",
+      logger.debug("Generating embeddings...");
+      const embeddings = await embeddingService.createEmbeddings(chunks);
+
+      logger.debug("Upserting to Vector DB...");
+      await pineconeService.upsertChunks(
+        tenantId,
+        documentId,
+        savedChunks,
+        embeddings,
       );
+
+      await db.document.update({
+        where: {
+          id: documentId,
+        },
+        data: {
+          status: "INDEXED",
+          pageCount: pdfData.numpages,
+          chunkCount: chunks.length,
+          indexedAt: new Date(),
+        },
+      });
+      logger.info({ documentId }, "Job Complete: Document Fully Indexed");
     } catch (error: any) {
       logger.error({ err: error, documentId }, "Job Failed");
       await db.document.update({

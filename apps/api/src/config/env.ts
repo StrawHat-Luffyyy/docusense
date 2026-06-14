@@ -24,6 +24,11 @@ const envSchema = z.object({
   AWS_S3_BUCKET: z.string().min(1),
   // Optional: Endpoint is needed if you use Cloudflare R2 or MinIO instead of AWS
   AWS_S3_ENDPOINT: z.string().url().optional(),
+
+  //OpenAI && Pinecone
+  OPENAI_API_KEY: z.string().min(1),
+  PINECONE_API_KEY: z.string().min(1),
+  PINECONE_INDEX: z.string().default("docusense"),
 });
 
 const _env = envSchema.safeParse(process.env);
