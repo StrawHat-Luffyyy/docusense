@@ -1,25 +1,35 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-embedding-001",
 });
 
 export const embeddingService = {
-  /**
-   * Converts an array of strings into an array of vector arrays
-   */
-
   async createEmbeddings(texts: string[]): Promise<number[][]> {
-    logger.debug(`Calling OpenAI to embed ${texts.length} chunks...`);
+    logger.debug(`Calling Gemini to embed ${texts.length} chunks...`);
 
-    const response = await openai.embeddings.create({
-      model: "text-embedding-3-large",
-      input: texts,
-      dimensions: 3072,
-    });
+    try {
+      const requests = texts.map((text) => ({
+        content: {
+          role: "user",
+          parts: [{ text }],
+        },
+      }));
 
-    return response.data.map((item) => item.embedding);
+      const result = await model.batchEmbedContents({
+        requests,
+      });
+
+      console.log("Embedding dimension:", result.embeddings[0].values.length);
+
+      return result.embeddings.map((e) => e.values);
+    } catch (error) {
+      logger.error({ err: error }, "Gemini Embedding Error");
+      throw new Error("Failed to generate embeddings via Gemini");
+    }
   },
 };

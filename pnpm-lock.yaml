@@ -37,9 +37,12 @@ importers:
       "@clerk/express":
         specifier: ^2.1.23
         version: 2.1.23(express@5.2.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      "@google/generative-ai":
+        specifier: ^0.24.1
+        version: 0.24.1
       "@langchain/textsplitters":
         specifier: ^1.0.1
-        version: 1.0.1(@langchain/core@1.1.48(openai@6.42.0(zod@4.4.3)))
+        version: 1.0.1(@langchain/core@1.1.48)
       "@pinecone-database/pinecone":
         specifier: ^7.2.0
         version: 7.2.0
@@ -67,9 +70,6 @@ importers:
       ioredis:
         specifier: 5.10.1
         version: 5.10.1
-      openai:
-        specifier: ^6.42.0
-        version: 6.42.0(zod@4.4.3)
       pdf-parse:
         specifier: 1.1.1
         version: 1.1.1
@@ -1060,6 +1060,13 @@ packages:
       {
         integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==,
       }
+
+  "@google/generative-ai@0.24.1":
+    resolution:
+      {
+        integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==,
+      }
+    engines: { node: ">=18.0.0" }
 
   "@hono/node-server@1.19.11":
     resolution:
@@ -6455,20 +6462,6 @@ packages:
       }
     engines: { node: ">=20" }
 
-  openai@6.42.0:
-    resolution:
-      {
-        integrity: sha512-1WFEt/uXMXOLhYRNkgJWo08Y2YNvNwpVU72K7ibrWgWpNOXd4VojXLbe6SQ4bLiUQ3Y8jz4IiyVkylJCL1DtZg==,
-      }
-    peerDependencies:
-      ws: ^8.18.0
-      zod: ^3.25 || ^4.0
-    peerDependenciesMeta:
-      ws:
-        optional: true
-      zod:
-        optional: true
-
   optionator@0.9.4:
     resolution:
       {
@@ -8938,6 +8931,8 @@ snapshots:
 
   "@floating-ui/utils@0.2.11": {}
 
+  "@google/generative-ai@0.24.1": {}
+
   "@hono/node-server@1.19.11(hono@4.12.23)":
     dependencies:
       hono: 4.12.23
@@ -9105,12 +9100,12 @@ snapshots:
 
   "@kurkle/color@0.3.4": {}
 
-  "@langchain/core@1.1.48(openai@6.42.0(zod@4.4.3))":
+  "@langchain/core@1.1.48":
     dependencies:
       "@cfworker/json-schema": 4.1.1
       "@standard-schema/spec": 1.1.0
       js-tiktoken: 1.0.21
-      langsmith: 0.7.7(openai@6.42.0(zod@4.4.3))
+      langsmith: 0.7.7
       mustache: 4.2.0
       p-queue: 6.6.2
       zod: 4.4.3
@@ -9121,9 +9116,9 @@ snapshots:
       - openai
       - ws
 
-  "@langchain/textsplitters@1.0.1(@langchain/core@1.1.48(openai@6.42.0(zod@4.4.3)))":
+  "@langchain/textsplitters@1.0.1(@langchain/core@1.1.48)":
     dependencies:
-      "@langchain/core": 1.1.48(openai@6.42.0(zod@4.4.3))
+      "@langchain/core": 1.1.48
       js-tiktoken: 1.0.21
 
   "@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)":
@@ -12068,11 +12063,9 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  langsmith@0.7.7(openai@6.42.0(zod@4.4.3)):
+  langsmith@0.7.7:
     dependencies:
       p-queue: 6.6.2
-    optionalDependencies:
-      openai: 6.42.0(zod@4.4.3)
 
   language-subtag-registry@0.3.23: {}
 
@@ -12445,10 +12438,6 @@ snapshots:
       is-inside-container: 1.0.0
       powershell-utils: 0.1.0
       wsl-utils: 0.3.1
-
-  openai@6.42.0(zod@4.4.3):
-    optionalDependencies:
-      zod: 4.4.3
 
   optionator@0.9.4:
     dependencies:

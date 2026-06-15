@@ -25,8 +25,8 @@ const envSchema = z.object({
   // Optional: Endpoint is needed if you use Cloudflare R2 or MinIO instead of AWS
   AWS_S3_ENDPOINT: z.string().url().optional(),
 
-  //OpenAI && Pinecone
-  OPENAI_API_KEY: z.string().min(1),
+  //Gemini && Pinecone
+  GEMINI_API_KEY: z.string().min(1),
   PINECONE_API_KEY: z.string().min(1),
   PINECONE_INDEX: z.string().default("docusense"),
 });
