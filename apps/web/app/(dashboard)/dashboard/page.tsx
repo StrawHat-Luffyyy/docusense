@@ -1,10 +1,9 @@
+import ChatInterface from "@/components/ChatInterface";
+
 export default function DashboardPage() {
   return (
-    <div>
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      <p className="mt-4 text-zinc-500">
-        Your organization is synced and ready.
-      </p>
-    </div>
+    <main className="h-screen bg-background">
+      <ChatInterface />
+    </main>
   );
 }

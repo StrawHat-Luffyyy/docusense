@@ -113,74 +113,173 @@ export function UploadDropzone() {
   return (
     <div
       {...getRootProps()}
-      className={`relative flex flex-col items-center justify-center w-full p-12 border-2 border-dashed rounded-xl cursor-pointer transition-colors
-        ${isDragActive ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20" : "border-zinc-300 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900"}
-        ${uploadState === "uploading" ? "pointer-events-none opacity-80" : ""}
-      `}
+      className={`
+      relative
+      flex
+      flex-col
+      items-center
+      justify-center
+      w-full
+      min-h-90
+      rounded-3xl
+      border
+      border-zinc-800
+      bg-zinc-950
+      transition-all
+      cursor-pointer
+
+      ${isDragActive ? "border-zinc-500 bg-zinc-900" : "hover:border-zinc-700"}
+
+      ${uploadState === "uploading" ? "pointer-events-none" : ""}
+    `}
     >
       <input {...getInputProps()} />
 
       {uploadState === "idle" && (
-        <>
-          <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-full mb-4">
-            <UploadCloud className="w-8 h-8 text-zinc-500" />
+        <div className="flex flex-col items-center text-center px-8">
+          <div
+            className="
+            flex
+            items-center
+            justify-center
+            w-16
+            h-16
+            rounded-2xl
+            bg-zinc-900
+            border
+            border-zinc-800
+            mb-6
+          "
+          >
+            <UploadCloud className="w-7 h-7 text-zinc-400" />
           </div>
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Click or drag a file to this area to upload
+
+          <h3 className="text-xl font-semibold">Drop documents here</h3>
+
+          <p className="mt-3 text-sm text-zinc-400 max-w-md">
+            Upload PDFs, Word documents, Markdown files, and text files to your
+            organization's knowledge base.
           </p>
-          <p className="text-xs text-zinc-500 mt-2">
-            Support for a single PDF, DOCX, TXT, or MD file. Maximum size 50MB.
-          </p>
-        </>
+
+          <div className="mt-6">
+            <button
+              type="button"
+              className="
+              rounded-xl
+              border
+              border-zinc-700
+              px-4
+              py-2
+              text-sm
+              hover:bg-zinc-900
+            "
+            >
+              Browse files
+            </button>
+          </div>
+
+          <div className="flex gap-2 flex-wrap justify-center mt-6">
+            {["PDF", "DOCX", "TXT", "MD"].map((type) => (
+              <div
+                key={type}
+                className="
+                rounded-full
+                border
+                border-zinc-800
+                px-3
+                py-1
+                text-xs
+                text-zinc-400
+              "
+              >
+                {type}
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-4 text-xs text-zinc-500">Maximum file size: 50 MB</p>
+        </div>
       )}
 
       {uploadState === "uploading" && (
-        <div className="flex flex-col items-center w-full max-w-xs">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            Uploading directly to secure storage...
-          </p>
-          <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-2.5">
-            <div
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            ></div>
+        <div className="w-full max-w-md px-8">
+          <div className="flex flex-col items-center">
+            <Loader2 className="w-8 h-8 animate-spin text-zinc-400 mb-4" />
+
+            <h3 className="font-medium">Uploading document...</h3>
+
+            <p className="text-sm text-zinc-500 mt-1">
+              Securely transferring file
+            </p>
+
+            <div className="w-full mt-6">
+              <div className="h-2 rounded-full bg-zinc-900 overflow-hidden">
+                <div
+                  className="h-full bg-zinc-200 transition-all"
+                  style={{
+                    width: `${progress}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-2 text-center text-sm text-zinc-400">
+                {progress}%
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {uploadState === "success" && (
-        <>
+        <div className="flex flex-col items-center text-center">
           <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Upload Complete
-          </p>
-          <p
-            className="text-xs text-zinc-500 mt-2 underline cursor-pointer"
+
+          <h3 className="font-medium">Document uploaded</h3>
+
+          <p className="text-sm text-zinc-500 mt-2">Processing has started.</p>
+
+          <button
             onClick={(e) => {
               e.stopPropagation();
               setUploadState("idle");
             }}
+            className="
+            mt-6
+            text-sm
+            text-zinc-400
+            hover:text-zinc-200
+          "
           >
             Upload another file
-          </p>
-        </>
+          </button>
+        </div>
       )}
 
       {uploadState === "error" && (
-        <>
+        <div className="flex flex-col items-center text-center">
           <XCircle className="w-12 h-12 text-red-500 mb-4" />
-          <p className="text-sm font-medium text-red-500">Upload Failed</p>
-          <p
-            className="text-xs text-zinc-500 mt-2 underline cursor-pointer"
+
+          <h3 className="font-medium">Upload failed</h3>
+
+          <p className="text-sm text-zinc-500 mt-2">
+            Something went wrong while uploading.
+          </p>
+
+          <button
             onClick={(e) => {
               e.stopPropagation();
               setUploadState("idle");
             }}
+            className="
+            mt-6
+            text-sm
+            text-zinc-400
+            hover:text-zinc-200
+          "
           >
             Try again
-          </p>
-        </>
+          </button>
+        </div>
       )}
     </div>
   );

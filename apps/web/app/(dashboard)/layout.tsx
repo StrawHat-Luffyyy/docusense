@@ -51,20 +51,31 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar Placeholder */}
-      <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-4 flex flex-col gap-6">
-        <div className="font-bold text-xl tracking-tighter">DocuSense</div>
-        <TenantSwitcher />
-        <nav className="flex flex-col gap-2">
-          {/* Navigation links will go here in Phase 2 */}
-        </nav>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar */}
+      <aside
+        className="
+        w-72
+        border-r
+        border-zinc-800
+        bg-zinc-950
+        flex
+        flex-col
+      "
+      >
+        {/* Logo */}
+        <div className="px-6 py-6 border-b border-zinc-800">
+          <h1 className="text-xl font-semibold tracking-tight">DocuSense</h1>
+        </div>
+
+        {/* Workspace */}
+        <div className="px-4 py-4">
+          <TenantSwitcher />
+        </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">{children}</div>
-      </main>
+      {/* Content */}
+      <main className="flex-1 overflow-hidden">{children}</main>
     </div>
   );
 }

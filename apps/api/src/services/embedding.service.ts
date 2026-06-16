@@ -24,7 +24,7 @@ export const embeddingService = {
         requests,
       });
 
-      console.log("Embedding dimension:", result.embeddings[0].values.length);
+      //console.log("Embedding dimension:", result.embeddings[0].values.length);
 
       return result.embeddings.map((e) => e.values);
     } catch (error) {

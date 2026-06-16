@@ -8,9 +8,21 @@ export function TenantSwitcher() {
       afterCreateOrganizationUrl="/dashboard"
       appearance={{
         elements: {
-          rootBox: "flex w-full justify-center",
-          organizationSwitcherTrigger:
-            "w-full py-2 px-4 border border-zinc-200 dark:border-zinc-800 rounded-md",
+          rootBox: "w-full",
+          organizationSwitcherTrigger: `
+            w-full
+            h-12
+            rounded-xl
+            border
+            border-zinc-800
+            bg-zinc-900
+            px-3
+            hover:bg-zinc-800
+            transition
+          `,
+          organizationPreviewTextContainer: "text-sm",
+          organizationPreviewMainIdentifier: "font-medium text-zinc-100",
+          organizationPreviewSecondaryIdentifier: "text-zinc-500 text-xs",
         },
       }}
     />
