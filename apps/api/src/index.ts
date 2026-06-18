@@ -20,6 +20,7 @@ import { webhookRouter } from "./routes/webhooks.route.js";
 import { authRouter } from "./routes/auth.route.js";
 import { documentsRouter } from "./routes/documents.route.js";
 import { chatRouter } from "./routes/chat.route.js";
+import { publicRouter } from "./routes/public.route.js";
 
 const app = express();
 
@@ -96,7 +97,8 @@ app.get("/api/health", async (req: Request, res: Response) => {
     });
   }
 });
-// Mount auth routes
+// Mount routes
+app.use("/api/public", publicRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/chat", chatRouter);

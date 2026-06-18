@@ -7,6 +7,7 @@ import { s3Service } from "../services/s3.service.js";
 import { db } from "../config/database.js";
 import { randomUUID } from "crypto";
 import { enqueueDocumentProcessing } from "../queues/ingestion.queue.js";
+import crypto from "crypto";
 
 export const documentsRouter = express.Router();
 
@@ -100,6 +101,64 @@ documentsRouter.post(
       res.status(202).json({
         status: "queued",
         message: "Document ingestion started in the background.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * Toggle document sharing and generate/revoke access tokens
+ */
+documentsRouter.patch(
+  "/:id/share",
+  requireAuth,
+  injectTenantContext,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      if (!id || Array.isArray(id)) {
+        return res.status(400).json({ error: "Invalid document ID" });
+      }
+      const { isPublic } = req.body;
+      const tenantId = req.tenantId!;
+
+      const document = await db.document.findUnique({
+        where: { id },
+      });
+      if (!document || document.organizationId !== tenantId) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      let sharingToken = document.sharingToken;
+      let sharedAt = document.sharedAt;
+      if (isPublic) {
+        if (!sharingToken) {
+          sharingToken = crypto.randomBytes(32).toString("hex");
+          sharedAt = new Date();
+        }
+      } else {
+        // Wipe them out if the user revokes public access
+        sharingToken = null;
+        sharedAt = null;
+      }
+      const updatedDoc = await db.document.update({
+        where: { id },
+        data: {
+          isPublic,
+          sharingToken,
+          sharedAt,
+        },
+        select: {
+          id: true,
+          isPublic: true,
+          sharingToken: true,
+        },
+      });
+      res.json({
+        message: isPublic ? "Public link generated" : "Public access revoked",
+        document: updatedDoc,
       });
     } catch (error) {
       next(error);

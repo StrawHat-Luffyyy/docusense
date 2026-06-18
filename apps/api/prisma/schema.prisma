@@ -49,12 +49,17 @@ model OrganizationMember {
 }
 
 model Document {
-  id              String          @id @default(uuid())
-  filename        String
-  mimeType        String
-  sizeBytes       Int
-  status          DocumentStatus  @default(PENDING)
-  storageKey      String
+  id         String         @id @default(uuid())
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  storageKey String
+  status     DocumentStatus @default(PENDING)
+
+  isPublic     Boolean   @default(false)
+  sharingToken String?   @unique
+  sharedAt     DateTime?
+
   pageCount       Int?
   wordCount       Int?
   chunkCount      Int?
