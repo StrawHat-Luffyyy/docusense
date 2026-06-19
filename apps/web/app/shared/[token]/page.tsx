@@ -40,8 +40,12 @@ export default function SharedDocumentPage() {
         }
         const data = await response.json();
         setDoc(data.document);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to load document");
+        }
       } finally {
         setLoading(false);
       }

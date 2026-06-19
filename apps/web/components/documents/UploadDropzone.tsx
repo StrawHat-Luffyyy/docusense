@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useAuth } from "@clerk/nextjs";
 import { apiClient } from "@/lib/api/client";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { UploadCloud, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -158,7 +158,7 @@ export function UploadDropzone() {
 
           <p className="mt-3 text-sm text-zinc-400 max-w-md">
             Upload PDFs, Word documents, Markdown files, and text files to your
-            organization's knowledge base.
+            organizations knowledge base.
           </p>
 
           <div className="mt-6">

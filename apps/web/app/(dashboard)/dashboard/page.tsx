@@ -12,11 +12,18 @@ const STATUS_STYLES: Record<string, string> = {
   FAILED: "bg-destructive/15 text-destructive",
   DELETED: "bg-muted text-muted-foreground",
 };
+type Document = {
+  id: string;
+  filename: string;
+  status: string;
+  isPublic: boolean;
+  sharingToken: string | null;
+};
 
 export default function DashboardPage() {
   const { getToken } = useAuth();
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [sharingDoc, setSharingDoc] = useState<any>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [sharingDoc, setSharingDoc] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
