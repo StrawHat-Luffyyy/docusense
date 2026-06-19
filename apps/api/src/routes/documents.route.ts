@@ -38,17 +38,31 @@ documentsRouter.post(
         storageKey,
         contentType,
       );
-      const document = await db.document.create({
-        data: {
-          id: documentId,
-          filename: sanitizedFilename,
-          mimeType: contentType,
-          sizeBytes,
-          storageKey,
-          status: "PENDING",
-          organizationId: tenantId,
-        },
-      });
+      await db.$transaction([
+        db.document.create({
+          data: {
+            id: documentId,
+            filename: sanitizedFilename,
+            mimeType: contentType,
+            sizeBytes,
+            storageKey,
+            status: "PENDING",
+            organizationId: tenantId,
+          },
+        }),
+
+        db.tenantUsage.upsert({
+          where: { tenantId },
+          update: {
+            documentCount: { increment: 1 },
+          },
+          create: {
+            tenantId,
+            documentCount: 1,
+            queryCount: 0,
+          },
+        }),
+      ]);
       res.status(200).json({
         documentId,
         uploadUrl,
