@@ -9,6 +9,7 @@ export const publicRouter = express.Router();
 publicRouter.get(
   "/documents/:token",
   async (req: Request, res: Response, next: NextFunction) => {
+    res.set("Cache-Control", "no-store");
     try {
       const { token } = req.params;
       if (!token || Array.isArray(token)) {
@@ -29,7 +30,7 @@ publicRouter.get(
           .status(404)
           .json({ error: "Shared document not found or link expired" });
       }
-      res.json(document);
+      res.json({ document });
     } catch (error) {
       next(error);
     }

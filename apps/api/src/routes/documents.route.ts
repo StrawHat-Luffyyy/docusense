@@ -165,3 +165,35 @@ documentsRouter.patch(
     }
   },
 );
+
+/**
+ * Fetch all documents for the authenticated tenant
+ */
+documentsRouter.get(
+  "/",
+  requireAuth,
+  injectTenantContext,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const tenantId = req.tenantId!;
+
+      const documents = await db.document.findMany({
+        where: { organizationId: tenantId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          filename: true,
+          status: true,
+          isPublic: true,
+          sharingToken: true,
+          pageCount: true,
+          createdAt: true,
+        },
+      });
+
+      res.json({ documents });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
