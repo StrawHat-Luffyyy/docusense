@@ -7,6 +7,7 @@ import { chatService } from "../services/chat.service.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../config/env.js";
 import { logger } from "../utils/logger.js";
+import { usageService } from "../services/usage.service.js";
 
 export const chatRouter = express.Router();
 
@@ -24,6 +25,15 @@ chatRouter.post(
 
       if (!message) {
         res.status(400).json({ error: "Message is required" });
+        return;
+      }
+
+      const isAllowed = await usageService.checkAndIncrementQuery(tenantId);
+      if (!isAllowed) {
+        res.status(429).json({
+          error:
+            "Monthly query limit reached. Please upgrade your workspace plan to continue using the AI.",
+        });
         return;
       }
 

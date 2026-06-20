@@ -45,6 +45,10 @@ export default function ChatInterface() {
         },
         body: JSON.stringify({ message: userMessageText }),
       });
+      if (response.status === 429) {
+        const errorData = await response.json();
+        throw new Error(errorData.error);
+      }
 
       if (!response.ok || !response.body) {
         throw new Error("Failed to start chat stream");
