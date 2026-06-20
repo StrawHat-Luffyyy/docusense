@@ -10,7 +10,11 @@ import { toast } from "sonner";
 
 type UploadState = "idle" | "uploading" | "success" | "error";
 
-export function UploadDropzone() {
+export function UploadDropzone({
+  onUploadComplete,
+}: {
+  onUploadComplete?: () => void;
+}) {
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [progress, setProgress] = useState(0);
   const { getToken, orgId } = useAuth();
@@ -72,6 +76,7 @@ export function UploadDropzone() {
         );
         setUploadState("success");
         toast.success("Document uploaded and queued for processing!");
+        onUploadComplete?.();
       } catch (error: unknown) {
         console.error("Upload failed:", error);
         setUploadState("error");
@@ -102,14 +107,9 @@ export function UploadDropzone() {
     maxFiles: 1,
     accept: {
       "application/pdf": [".pdf"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-      "text/plain": [".txt"],
-      "text/markdown": [".md"],
     },
     maxSize: 50 * 1024 * 1024, // 50MB
   });
-
   return (
     <div
       {...getRootProps()}
@@ -157,8 +157,7 @@ export function UploadDropzone() {
           <h3 className="text-xl font-semibold">Drop documents here</h3>
 
           <p className="mt-3 text-sm text-zinc-400 max-w-md">
-            Upload PDFs, Word documents, Markdown files, and text files to your
-            organizations knowledge base.
+            Upload PDF files to your organizations knowledge base.
           </p>
 
           <div className="mt-6">
@@ -177,24 +176,10 @@ export function UploadDropzone() {
               Browse files
             </button>
           </div>
-
           <div className="flex gap-2 flex-wrap justify-center mt-6">
-            {["PDF", "DOCX", "TXT", "MD"].map((type) => (
-              <div
-                key={type}
-                className="
-                rounded-full
-                border
-                border-zinc-800
-                px-3
-                py-1
-                text-xs
-                text-zinc-400
-              "
-              >
-                {type}
-              </div>
-            ))}
+            <div className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-400">
+              PDF
+            </div>
           </div>
 
           <p className="mt-4 text-xs text-zinc-500">Maximum file size: 50 MB</p>

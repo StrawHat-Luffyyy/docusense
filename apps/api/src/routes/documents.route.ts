@@ -11,12 +11,7 @@ import crypto from "crypto";
 
 export const documentsRouter = express.Router();
 
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
-  "text/plain",
-  "text/markdown",
-];
+const ALLOWED_MIME_TYPES = ["application/pdf"];
 documentsRouter.post(
   "/upload/init",
   requireAuth,
@@ -206,6 +201,47 @@ documentsRouter.get(
       });
 
       res.json({ documents });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+/**
+ * Delete a document, its S3 object, and decrement tenant usage
+ */
+documentsRouter.delete(
+  "/:id",
+  requireAuth,
+  injectTenantContext,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      if (!id || Array.isArray(id)) {
+        return res.status(400).json({ error: "Invalid document ID" });
+      }
+      const tenantId = req.tenantId!;
+
+      const document = await db.document.findUnique({ where: { id } });
+      if (!document || document.organizationId !== tenantId) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      // Best-effort S3 cleanup — don't block DB deletion if this fails
+      try {
+        await s3Service.deleteObject(document.storageKey);
+      } catch (s3Error) {
+        console.error("Failed to delete S3 object:", s3Error);
+      }
+
+      await db.$transaction([
+        db.document.delete({ where: { id } }), // cascades to DocumentChunk
+        db.tenantUsage.update({
+          where: { tenantId },
+          data: { documentCount: { decrement: 1 } },
+        }),
+      ]);
+
+      res.status(200).json({ message: "Document deleted" });
     } catch (error) {
       next(error);
     }

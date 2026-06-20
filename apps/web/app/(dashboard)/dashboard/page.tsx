@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import ChatInterface from "@/components/ChatInterface";
 import ShareModal from "@/components/ShareModal";
+import { UploadModal } from "@/components/documents/UploadModal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const STATUS_STYLES: Record<string, string> = {
   INDEXED: "bg-success/15 text-success",
@@ -25,37 +28,76 @@ export default function DashboardPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [usageData, setUsageData] = useState({ queryCount: 0, limit: 100 });
   const [sharingDoc, setSharingDoc] = useState<Document | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [docToDelete, setDocToDelete] = useState<any>(null);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = await getToken();
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [docsRes, usageRes] = await Promise.all([
+        fetch("/api/documents", { headers }),
+        fetch("/api/usage", { headers }),
+      ]);
+
+      if (docsRes.ok) {
+        const docsData = await docsRes.json();
+        setDocuments(docsData.documents);
+      }
+
+      if (usageRes.ok) {
+        const usageJson = await usageRes.json();
+        setUsageData({
+          queryCount: usageJson.usage.queryCount,
+          limit: usageJson.limit,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const token = await getToken();
-        const headers = { Authorization: `Bearer ${token}` };
-        const [docsRes, usageRes] = await Promise.all([
-          fetch("/api/documents", { headers }),
-          fetch("/api/usage", { headers }),
-        ]);
-        if (docsRes.ok) {
-          const docsData = await docsRes.json();
-          setDocuments(docsData.documents);
-        }
-        if (usageRes.ok) {
-          const usageJson = await usageRes.json();
-          setUsageData({
-            queryCount: usageJson.usage.queryCount,
-            limit: usageJson.limit,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, [getToken]);
+
+  useEffect(() => {
+    const hasActiveDocs = documents.some(
+      (d) => d.status === "PENDING" || d.status === "PROCESSING",
+    );
+    if (!hasActiveDocs) return;
+
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [documents]);
+  const handleDelete = async () => {
+    if (!docToDelete) return;
+    const docId = docToDelete.id;
+    setDeletingId(docId);
+    setDocToDelete(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/documents/${docId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setDocuments((prev) => prev.filter((d) => d.id !== docId));
+      }
+    } catch (error) {
+      console.error("Failed to delete document:", error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const usagePercentage = Math.min(
     (usageData.queryCount / usageData.limit) * 100,
@@ -64,7 +106,6 @@ export default function DashboardPage() {
 
   return (
     <main className="flex h-screen bg-background text-foreground">
-      {/* SIDEBAR */}
       <aside className="w-85 shrink-0 border-r border-border bg-card flex flex-col">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div>
@@ -73,6 +114,13 @@ export default function DashboardPage() {
               {documents.length} document{documents.length !== 1 ? "s" : ""}
             </p>
           </div>
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="flex items-center justify-center w-7 h-7 rounded-lg border border-border hover:bg-background/60 transition-colors"
+            title="Add documents"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
@@ -81,9 +129,17 @@ export default function DashboardPage() {
               Loading workspace...
             </p>
           ) : documents.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center mt-10">
-              No documents uploaded yet.
-            </p>
+            <div className="text-center mt-10 px-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                No documents uploaded yet.
+              </p>
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="text-xs font-medium text-primary hover:text-primary/80"
+              >
+                Upload your first document
+              </button>
+            </div>
           ) : (
             documents.map((doc) => (
               <div
@@ -108,19 +164,32 @@ export default function DashboardPage() {
                     {doc.status}
                   </span>
 
-                  <button
-                    onClick={() => setSharingDoc(doc)}
-                    className="text-xs font-medium text-primary hover:text-primary/80 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    Share
-                  </button>
+                  <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setSharingDoc(doc)}
+                      className="text-xs font-medium text-primary hover:text-primary/80"
+                    >
+                      Share
+                    </button>
+                    <button
+                      onClick={() => setDocToDelete(doc)}
+                      disabled={deletingId === doc.id}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      title="Delete document"
+                    >
+                      {deletingId === doc.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* USAGE PROGRESS BAR */}
         <div className="p-4 border-t border-border bg-card">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -145,17 +214,8 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* CHAT */}
-      <div className="flex-1 bg-white relative">
-        <ChatInterface
-          onMessageSent={() => {
-            // Instantly tick the counter up by 1 without needing a page reload
-            setUsageData((prev) => ({
-              ...prev,
-              queryCount: prev.queryCount + 1,
-            }));
-          }}
-        />
+      <div className="flex-1 relative">
+        <ChatInterface />
       </div>
 
       {sharingDoc && (
@@ -165,6 +225,21 @@ export default function DashboardPage() {
           initialIsPublic={sharingDoc.isPublic}
           initialToken={sharingDoc.sharingToken}
           onClose={() => setSharingDoc(null)}
+        />
+      )}
+
+      {isUploadOpen && (
+        <UploadModal
+          onClose={() => setIsUploadOpen(false)}
+          onUploadComplete={fetchDashboardData}
+        />
+      )}
+      {docToDelete && (
+        <ConfirmDialog
+          title="Delete document?"
+          description={`"${docToDelete.filename}" will be permanently removed. This can't be undone.`}
+          onConfirm={handleDelete}
+          onCancel={() => setDocToDelete(null)}
         />
       )}
     </main>
