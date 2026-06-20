@@ -21,6 +21,7 @@ import { authRouter } from "./routes/auth.route.js";
 import { documentsRouter } from "./routes/documents.route.js";
 import { chatRouter } from "./routes/chat.route.js";
 import { publicRouter } from "./routes/public.route.js";
+import { usageRouter } from "./routes/usage.route.js";
 
 const app = express();
 
@@ -102,6 +103,7 @@ app.use("/api/public", publicRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/usage", usageRouter);
 
 // Test route to verify the error handler
 app.get("/api/test-error", () => {

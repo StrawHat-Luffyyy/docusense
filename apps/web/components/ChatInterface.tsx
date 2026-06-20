@@ -8,8 +8,11 @@ interface Message {
   role: "user" | "assistant";
   content: string;
 }
+interface ChatInterfaceProps {
+  onMessageSent?: () => void;
+}
 
-export default function ChatInterface() {
+export default function ChatInterface({ onMessageSent }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +55,9 @@ export default function ChatInterface() {
 
       if (!response.ok || !response.body) {
         throw new Error("Failed to start chat stream");
+      }
+      if (onMessageSent) {
+        onMessageSent();
       }
 
       // Initialize the stream reader and decoder

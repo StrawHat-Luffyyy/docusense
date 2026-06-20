@@ -18,7 +18,6 @@ export const chatService = {
     logger.debug(`Retrieving context for query : "${query}"`);
 
     const queryEmbedding = await embeddingService.createEmbeddings([query]);
-    //console.log(queryEmbedding);
     const queryVector = queryEmbedding[0];
 
     const queryResponse = await index.namespace(tenantId).query({

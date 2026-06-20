@@ -23,27 +23,44 @@ type Document = {
 export default function DashboardPage() {
   const { getToken } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [usageData, setUsageData] = useState({ queryCount: 0, limit: 100 });
   const [sharingDoc, setSharingDoc] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDocuments = async () => {
+    const fetchDashboardData = async () => {
       try {
         const token = await getToken();
-        const res = await fetch("/api/documents", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch documents");
-        const data = await res.json();
-        setDocuments(data.documents);
+        const headers = { Authorization: `Bearer ${token}` };
+        const [docsRes, usageRes] = await Promise.all([
+          fetch("/api/documents", { headers }),
+          fetch("/api/usage", { headers }),
+        ]);
+        if (docsRes.ok) {
+          const docsData = await docsRes.json();
+          setDocuments(docsData.documents);
+        }
+        if (usageRes.ok) {
+          const usageJson = await usageRes.json();
+          setUsageData({
+            queryCount: usageJson.usage.queryCount,
+            limit: usageJson.limit,
+          });
+        }
       } catch (error) {
-        console.error("Failed to load knowledge library:", error);
+        console.error("Failed to load dashboard data:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchDocuments();
+
+    fetchDashboardData();
   }, [getToken]);
+
+  const usagePercentage = Math.min(
+    (usageData.queryCount / usageData.limit) * 100,
+    100,
+  );
 
   return (
     <main className="flex h-screen bg-background text-foreground">
@@ -61,7 +78,7 @@ export default function DashboardPage() {
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center mt-10">
-              Loading documents...
+              Loading workspace...
             </p>
           ) : documents.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center mt-10">
@@ -102,11 +119,43 @@ export default function DashboardPage() {
             ))
           )}
         </div>
+
+        {/* USAGE PROGRESS BAR */}
+        <div className="p-4 border-t border-border bg-card">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              AI Queries Used
+            </span>
+            <span className="text-xs font-bold text-foreground">
+              {usageData.queryCount} / {usageData.limit}
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all ${
+                usagePercentage > 90
+                  ? "bg-destructive"
+                  : usagePercentage > 75
+                    ? "bg-warning"
+                    : "bg-primary"
+              }`}
+              style={{ width: `${usagePercentage}%` }}
+            />
+          </div>
+        </div>
       </aside>
 
       {/* CHAT */}
-      <div className="flex-1 relative">
-        <ChatInterface />
+      <div className="flex-1 bg-white relative">
+        <ChatInterface
+          onMessageSent={() => {
+            // Instantly tick the counter up by 1 without needing a page reload
+            setUsageData((prev) => ({
+              ...prev,
+              queryCount: prev.queryCount + 1,
+            }));
+          }}
+        />
       </div>
 
       {sharingDoc && (
