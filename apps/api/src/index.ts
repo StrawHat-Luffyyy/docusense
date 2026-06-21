@@ -25,6 +25,11 @@ import { usageRouter } from "./routes/usage.route.js";
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 app.use((req, res, next) => {
   ((req.headers["x-correlation-id"] =
     req.headers["x-correlation-id"] || randomUUID()),
@@ -36,7 +41,14 @@ app.use((req, res, next) => {
 app.use(helmet());
 app.use(
   cors({
-    origin: env.ALLOW_ORIGINS.split(","),
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by strict CORS policy"));
+      }
+    },
     credentials: true,
   }),
 );

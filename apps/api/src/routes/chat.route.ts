@@ -46,7 +46,10 @@ chatRouter.post(
       let contextText = "";
       if (contextChunks.length > 0) {
         contextText = contextChunks
-          .map((c) => `[Source: ${c.document.filename}]\n${c.content}`)
+          .map(
+            (c: { document: { filename: string }; content: string }) =>
+              `[Source: ${c.document.filename}]\n${c.content}`,
+          )
           .join("\n\n---\n\n");
       } else {
         contextText = "No relevant documents found in the database.";
