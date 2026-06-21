@@ -120,15 +120,19 @@ export default function ChatInterface({
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Streaming error:", error);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to get a response. Please try again.";
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content:
-            error?.message || "Failed to get a response. Please try again.",
+          content: errorMessage,
         },
       ]);
     } finally {
@@ -150,7 +154,7 @@ export default function ChatInterface({
                   What would you like to know?
                 </h1>
                 <p className="mt-3 text-muted-foreground text-lg">
-                  Ask anything about the documents you've uploaded.
+                  Ask anything about the documents you&#39;ve uploaded.
                 </p>
               </div>
 

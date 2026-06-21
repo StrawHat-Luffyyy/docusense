@@ -100,7 +100,7 @@ export function UploadDropzone({
         toast.error(errorMessage);
       }
     },
-    [getToken, orgId],
+    [getToken, orgId, onUploadComplete],
   );
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

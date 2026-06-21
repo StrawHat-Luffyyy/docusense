@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import ChatInterface from "@/components/ChatInterface";
@@ -31,9 +31,8 @@ export default function DashboardPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [docToDelete, setDocToDelete] = useState<any>(null);
-
-  const fetchDashboardData = async () => {
+  const [docToDelete, setDocToDelete] = useState<Document | null>(null);
+  const fetchDashboardData = useCallback(async () => {
     try {
       const token = await getToken();
       const headers = { Authorization: `Bearer ${token}` };
@@ -60,24 +59,23 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getToken]);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [getToken]);
+  }, [fetchDashboardData]);
 
   useEffect(() => {
     const hasActiveDocs = documents.some(
       (d) => d.status === "PENDING" || d.status === "PROCESSING",
     );
     if (!hasActiveDocs) return;
-
     const interval = setInterval(() => {
       fetchDashboardData();
     }, 3000);
-
     return () => clearInterval(interval);
-  }, [documents]);
+  }, [documents, fetchDashboardData]);
+
   const handleDelete = async () => {
     if (!docToDelete) return;
     const docId = docToDelete.id;
