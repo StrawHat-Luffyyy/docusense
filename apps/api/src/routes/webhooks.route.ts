@@ -47,7 +47,6 @@ webhookRouter.post(
         const { id, email_addresses, first_name, last_name, image_url } =
           evt.data;
         const primaryEmail = email_addresses[0]?.email_address;
-
         await db.user.upsert({
           where: { id },
           update: {
@@ -64,43 +63,42 @@ webhookRouter.post(
             imageUrl: image_url,
           },
         });
+      } else if (
+        eventType === "organization.created" ||
+        eventType === "organization.updated"
+      ) {
+        const { id, name, slug, image_url, created_by } = evt.data;
+        await db.organization.upsert({
+          where: { clerkOrgId: id },
+          update: { name, slug, imageUrl: image_url },
+          create: {
+            clerkOrgId: id,
+            name,
+            slug,
+            imageUrl: image_url,
+          },
+        });
 
-        if (
-          eventType == "organization.created" ||
-          eventType === "organization.updated"
-        ) {
-          const { id, name, slug, image_url, created_by } = evt.data;
-          await db.organization.upsert({
+        // If created_by is present, they are the OWNER
+        if (eventType === "organization.created" && created_by) {
+          const internalOrg = await db.organization.findUnique({
             where: { clerkOrgId: id },
-            update: { name, slug, imageUrl: image_url },
-            create: {
-              clerkOrgId: id,
-              name,
-              slug,
-              imageUrl: image_url,
-            },
           });
-          // If created_by is present, they are the OWNER
-          if (eventType === "organization.created" && created_by) {
-            const internalOrg = await db.organization.findUnique({
-              where: { clerkOrgId: id },
-            });
-            if (internalOrg) {
-              await db.organizationMember.upsert({
-                where: {
-                  userId_organizationId: {
-                    userId: created_by,
-                    organizationId: internalOrg.id,
-                  },
-                },
-                update: { role: Role.OWNER },
-                create: {
+          if (internalOrg) {
+            await db.organizationMember.upsert({
+              where: {
+                userId_organizationId: {
                   userId: created_by,
                   organizationId: internalOrg.id,
-                  role: Role.OWNER,
                 },
-              });
-            }
+              },
+              update: { role: Role.OWNER },
+              create: {
+                userId: created_by,
+                organizationId: internalOrg.id,
+                role: Role.OWNER,
+              },
+            });
           }
         }
       }
