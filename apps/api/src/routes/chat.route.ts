@@ -4,7 +4,10 @@ import {
   injectTenantContext,
 } from "../middleware/auth.middleware.js";
 import { chatService } from "../services/chat.service.js";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  GoogleGenerativeAIFetchError,
+} from "@google/generative-ai";
 import { env } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 import { usageService } from "../services/usage.service.js";
@@ -13,6 +16,36 @@ export const chatRouter = express.Router();
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+// Retries up to `maxAttempts` times with exponential backoff, only on 503s
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts = 3,
+  baseDelayMs = 1000,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const is503 =
+        (err instanceof GoogleGenerativeAIFetchError && err.status === 503) ||
+        (err instanceof Error && err.message.includes("503"));
+
+      if (is503 && attempt < maxAttempts) {
+        const delay = baseDelayMs * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+        logger.warn(
+          `Gemini 503 on attempt ${attempt}/${maxAttempts}, retrying in ${delay}ms`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw err; // non-503 or exhausted retries
+    }
+  }
+  throw lastError;
+}
 
 chatRouter.post(
   "/",
@@ -54,6 +87,7 @@ chatRouter.post(
       } else {
         contextText = "No relevant documents found in the database.";
       }
+
       const systemPrompt = `
         You are a helpful AI assistant for a private organization.
         Answer the user's question using ONLY the provided context below.
@@ -66,29 +100,49 @@ chatRouter.post(
         USER QUESTION:
         ${message}
       `;
-      // Configure Express for Server-Sent Events (SSE)
+
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      logger.info(`Streaming LLM response for query : "${message}" `);
+      logger.info(`Streaming LLM response for query: "${message}"`);
 
-      const result = await model.generateContentStream(systemPrompt);
+      // Wrap the Gemini call in retry logic
+      const result = await withRetry(() =>
+        model.generateContentStream(systemPrompt),
+      );
 
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
         res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
       }
+
       res.write("data: [DONE]\n\n");
       res.end();
     } catch (error) {
       logger.error({ err: error }, "Chat Stream Error");
-      // If headers are already sent, we can't send a 500 status code, we just close the stream
+
+      const is503 =
+        (error instanceof GoogleGenerativeAIFetchError &&
+          error.status === 503) ||
+        (error instanceof Error && error.message.includes("503"));
+
       if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to process chat message" });
+        if (is503) {
+          res.status(503).json({
+            error:
+              "The AI service is temporarily overloaded. Please try again in a moment.",
+          });
+        } else {
+          res.status(500).json({ error: "Failed to process chat message" });
+        }
       } else {
         res.write(
-          `data: ${JSON.stringify({ error: "An error occurred during generation." })}\n\n`,
+          `data: ${JSON.stringify({
+            error: is503
+              ? "AI service overloaded. Please retry."
+              : "An error occurred during generation.",
+          })}\n\n`,
         );
         res.end();
       }

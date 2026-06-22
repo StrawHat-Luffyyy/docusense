@@ -28,8 +28,15 @@ export const embeddingService = {
 
       return result.embeddings.map((e) => e.values);
     } catch (error) {
-      logger.error({ err: error }, "Gemini Embedding Error");
-      throw new Error("Failed to generate embeddings via Gemini");
+      logger.error(
+        {
+          error,
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+        "Gemini Embedding Error",
+      );
+      throw error;
     }
   },
 };
