@@ -7,6 +7,7 @@ import ChatInterface from "@/components/ChatInterface";
 import ShareModal from "@/components/ShareModal";
 import { UploadModal } from "@/components/documents/UploadModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { apiClient } from "@/lib/api/client";
 
 const STATUS_STYLES: Record<string, string> = {
   INDEXED: "bg-success/15 text-success",
@@ -34,32 +35,23 @@ export default function DashboardPage() {
   const [docToDelete, setDocToDelete] = useState<Document | null>(null);
   const fetchDashboardData = useCallback(async () => {
     try {
-      const token = await getToken();
-      const headers = { Authorization: `Bearer ${token}` };
-
       const [docsRes, usageRes] = await Promise.all([
-        fetch("/api/documents", { headers }),
-        fetch("/api/usage", { headers }),
+        apiClient.get("/api/documents"),
+        apiClient.get("/api/usage"),
       ]);
 
-      if (docsRes.ok) {
-        const docsData = await docsRes.json();
-        setDocuments(docsData.documents);
-      }
+      setDocuments(docsRes.data.documents);
 
-      if (usageRes.ok) {
-        const usageJson = await usageRes.json();
-        setUsageData({
-          queryCount: usageJson.usage.queryCount,
-          limit: usageJson.limit,
-        });
-      }
+      setUsageData({
+        queryCount: usageRes.data.usage.queryCount,
+        limit: usageRes.data.limit,
+      });
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
