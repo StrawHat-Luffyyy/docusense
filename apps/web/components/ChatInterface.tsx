@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Loader2, ArrowUp, FileText, Sparkles } from "lucide-react";
+import { useAuth } from "@clerk/nextjs"; // 1. Import Clerk auth hook
 
 interface Message {
   id: string;
@@ -24,6 +25,7 @@ export default function ChatInterface({
   onMessageSent,
   documents = [],
 }: ChatInterfaceProps) {
+  const { getToken } = useAuth(); // 2. Initialize the hook
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -69,9 +71,18 @@ export default function ChatInterface({
     ]);
 
     try {
-      const response = await fetch("/api/chat", {
+      // 3. Grab the token and build the correct URL
+      const token = await getToken();
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+      // 4. Point the fetch to the backend and attach the token
+      const response = await fetch(`${baseUrl}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ message: userMessageText }),
       });
 
