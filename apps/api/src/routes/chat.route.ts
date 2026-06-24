@@ -11,6 +11,7 @@ import {
 import { env } from "../config/env.js";
 import { logger } from "../utils/logger.js";
 import { usageService } from "../services/usage.service.js";
+import type { RetrievedChunk } from "../types/citation.js";
 
 export const chatRouter = express.Router();
 
@@ -47,6 +48,24 @@ async function withRetry<T>(
   throw lastError;
 }
 
+/**
+ * Builds a numbered context string with source references that the
+ * LLM can cite in its answer using [1], [2], etc.
+ */
+function buildContextWithSources(chunks: RetrievedChunk[]): string {
+  if (chunks.length === 0) {
+    return "No relevant documents found in the database.";
+  }
+
+  return chunks
+    .map((chunk, index) => {
+      const pageInfo =
+        chunk.pageNumber != null ? `, Page ${chunk.pageNumber}` : "";
+      return `[${index + 1}] Source: ${chunk.document.filename}${pageInfo}\n${chunk.content}`;
+    })
+    .join("\n\n---\n\n");
+}
+
 chatRouter.post(
   "/",
   requireAuth,
@@ -76,23 +95,15 @@ chatRouter.post(
         3,
       );
 
-      let contextText = "";
-      if (contextChunks.length > 0) {
-        contextText = contextChunks
-          .map(
-            (c: { document: { filename: string }; content: string }) =>
-              `[Source: ${c.document.filename}]\n${c.content}`,
-          )
-          .join("\n\n---\n\n");
-      } else {
-        contextText = "No relevant documents found in the database.";
-      }
+      const contextText = buildContextWithSources(contextChunks);
 
       const systemPrompt = `
         You are a helpful AI assistant for a private organization.
         Answer the user's question using ONLY the provided context below.
         If the context does not contain the answer, say "I cannot answer this based on the provided documents."
         Do not use your general outside knowledge.
+
+        When you use information from a source, cite it using the source number in brackets, e.g. [1], [2].
         
         CONTEXT:
         ${contextText}
@@ -116,6 +127,10 @@ chatRouter.post(
         const chunkText = chunk.text();
         res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
       }
+
+      // Send citations as a final SSE event before closing the stream
+      const citations = chatService.formatCitations(contextChunks);
+      res.write(`data: ${JSON.stringify({ citations })}\n\n`);
 
       res.write("data: [DONE]\n\n");
       res.end();

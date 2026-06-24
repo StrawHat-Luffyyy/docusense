@@ -14,7 +14,12 @@ export const pineconeService = {
   async upsertChunks(
     tenantId: string,
     documentId: string,
-    chunks: { id: string; content: string; chunkIndex: number }[],
+    chunks: {
+      id: string;
+      content: string;
+      chunkIndex: number;
+      pageNumber?: number | null;
+    }[],
     embeddings: number[][],
   ) {
     logger.debug(
@@ -28,6 +33,7 @@ export const pineconeService = {
         documentId,
         chunkIndex: chunk.chunkIndex,
         content: chunk.content,
+        ...(chunk.pageNumber != null && { pageNumber: chunk.pageNumber }),
       },
     }));
     const BATCH_SIZE = 100;

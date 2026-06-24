@@ -1,13 +1,24 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Loader2, ArrowUp, FileText, Sparkles } from "lucide-react";
+import { Loader2, ArrowUp, FileText, Sparkles, X } from "lucide-react";
 import { useAuth } from "@clerk/nextjs"; // 1. Import Clerk auth hook
+
+interface Citation {
+  documentId: string;
+  documentName: string;
+  pageNumber: number | null;
+  chunkIndex: number;
+  chunkId: string;
+  contentPreview: string;
+  score: number;
+}
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  citations?: Citation[];
 }
 
 interface DocSummary {
@@ -19,6 +30,90 @@ interface DocSummary {
 interface ChatInterfaceProps {
   onMessageSent?: () => void;
   documents?: DocSummary[];
+}
+
+/**
+ * Citation badge rendered below an assistant message.
+ * Clicking opens a popover with source details.
+ */
+function CitationBadge({
+  citation,
+  index,
+}: {
+  citation: Citation;
+  index: number;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block" ref={popoverRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+          bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+        title={`Source: ${citation.documentName}`}
+      >
+        <FileText className="w-3 h-3" />
+        <span>[{index + 1}]</span>
+        <span className="max-w-[120px] truncate">{citation.documentName}</span>
+        {citation.pageNumber != null && (
+          <span className="text-primary/60">p.{citation.pageNumber}</span>
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="absolute bottom-full left-0 mb-2 z-50 w-80 rounded-xl border border-border bg-card shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">
+                {citation.documentName}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                {citation.pageNumber != null && (
+                  <span className="text-xs text-muted-foreground">
+                    Page {citation.pageNumber}
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  Chunk #{citation.chunkIndex + 1}
+                </span>
+                <span className="text-xs text-primary/70 font-medium">
+                  {Math.round(citation.score * 100)}% match
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-muted-foreground hover:text-foreground p-0.5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="rounded-lg bg-muted/50 border border-border p-3">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {citation.contentPreview}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ChatInterface({
@@ -116,6 +211,19 @@ export default function ChatInterface({
           if (jsonString === "[DONE]") break;
           try {
             const parsed = JSON.parse(jsonString);
+
+            // Handle citation event
+            if (parsed.citations) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, citations: parsed.citations }
+                    : msg,
+                ),
+              );
+              continue;
+            }
+
             if (parsed.text) {
               accumulatedResponse += parsed.text;
               setMessages((prev) =>
@@ -257,6 +365,19 @@ export default function ChatInterface({
                         </span>
                       )}
                     </div>
+
+                    {/* Citation badges */}
+                    {msg.citations && msg.citations.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {msg.citations.map((citation, i) => (
+                          <CitationBadge
+                            key={citation.chunkId}
+                            citation={citation}
+                            index={i}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

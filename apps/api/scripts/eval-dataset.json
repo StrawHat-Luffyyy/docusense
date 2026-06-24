@@ -1,0 +1,88 @@
+[
+  {
+    "query": "What is the maximum file upload size limit?",
+    "expectedDocumentName": "example-guide.pdf",
+    "expectedChunkKeywords": ["upload", "size", "limit", "50MB"],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": "Replace tenantId and expectedDocumentName with values from your actual indexed documents"
+  },
+  {
+    "query": "How does multi-tenant isolation work?",
+    "expectedDocumentName": "architecture.pdf",
+    "expectedChunkKeywords": [
+      "tenant",
+      "isolation",
+      "namespace",
+      "organization"
+    ],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "What embedding model is used for document indexing?",
+    "expectedDocumentName": "architecture.pdf",
+    "expectedChunkKeywords": ["embedding", "gemini", "model", "vector"],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "How are documents processed after upload?",
+    "expectedDocumentName": "architecture.pdf",
+    "expectedChunkKeywords": [
+      "queue",
+      "processing",
+      "BullMQ",
+      "worker",
+      "ingestion"
+    ],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "What security measures are in place?",
+    "expectedDocumentName": "security-policy.pdf",
+    "expectedChunkKeywords": [
+      "security",
+      "authentication",
+      "authorization",
+      "Clerk"
+    ],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "How is the PDF text extracted?",
+    "expectedDocumentName": "architecture.pdf",
+    "expectedChunkKeywords": ["pdf", "parse", "extract", "text"],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "What database is used for storing document metadata?",
+    "expectedDocumentName": "architecture.pdf",
+    "expectedChunkKeywords": ["PostgreSQL", "database", "Prisma"],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "How does the chat streaming work?",
+    "expectedDocumentName": "architecture.pdf",
+    "expectedChunkKeywords": ["SSE", "stream", "event", "response"],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "What is the chunking strategy for documents?",
+    "expectedDocumentName": "architecture.pdf",
+    "expectedChunkKeywords": ["chunk", "split", "overlap", "1000"],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  },
+  {
+    "query": "How are presigned URLs generated for uploads?",
+    "expectedDocumentName": "example-guide.pdf",
+    "expectedChunkKeywords": ["presigned", "S3", "upload", "URL"],
+    "tenantId": "YOUR_TEST_TENANT_ID",
+    "notes": ""
+  }
+]

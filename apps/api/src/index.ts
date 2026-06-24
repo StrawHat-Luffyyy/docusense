@@ -22,6 +22,7 @@ import { documentsRouter } from "./routes/documents.route.js";
 import { chatRouter } from "./routes/chat.route.js";
 import { publicRouter } from "./routes/public.route.js";
 import { usageRouter } from "./routes/usage.route.js";
+import { rateLimiters } from "./middleware/rateLimit.middleware.js";
 
 const app = express();
 
@@ -31,9 +32,9 @@ const allowedOrigins = [
 ].filter(Boolean) as string[];
 
 app.use((req, res, next) => {
-  ((req.headers["x-correlation-id"] =
-    req.headers["x-correlation-id"] || randomUUID()),
-    res.setHeader("X-Correlation-ID", req.headers["x-correlation-id"]));
+  req.headers["x-correlation-id"] =
+    req.headers["x-correlation-id"] || randomUUID();
+  res.setHeader("X-Correlation-ID", req.headers["x-correlation-id"]);
   next();
 });
 
@@ -43,7 +44,7 @@ app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) === -1) {
+      if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by strict CORS policy"));
@@ -114,7 +115,7 @@ app.get("/api/health", async (req: Request, res: Response) => {
 app.use("/api/public", publicRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/documents", documentsRouter);
-app.use("/api/chat", chatRouter);
+app.use("/api/chat", rateLimiters.chat, chatRouter);
 app.use("/api/usage", usageRouter);
 
 // Test route to verify the error handler

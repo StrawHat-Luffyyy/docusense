@@ -8,6 +8,7 @@ import { db } from "../config/database.js";
 import { randomUUID } from "crypto";
 import { enqueueDocumentProcessing } from "../queues/ingestion.queue.js";
 import crypto from "crypto";
+import { rateLimiters } from "../middleware/rateLimit.middleware.js";
 
 export const documentsRouter = express.Router();
 
@@ -16,6 +17,7 @@ documentsRouter.post(
   "/upload/init",
   requireAuth,
   injectTenantContext,
+  rateLimiters.upload,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { filename, contentType, sizeBytes } = req.body;

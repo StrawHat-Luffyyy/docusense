@@ -53,7 +53,7 @@ export const injectTenantContext = async (
     req.tenantId = organization.id;
     req.tenantRole = membership.role;
     next();
-  } catch (error) {
+  } catch (_error) {
     return next(
       new AppError(
         500,

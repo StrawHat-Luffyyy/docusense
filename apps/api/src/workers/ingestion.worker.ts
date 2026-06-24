@@ -28,16 +28,17 @@ const worker = new Worker(
 
       logger.info(`Extracted ${pdfData.numpages} pages from document`);
 
-      logger.debug("Chunking text...");
-      const chunks = await chunkingService.splitText(rawText);
-      logger.info(`Generated ${chunks.length} chunks from document`);
+      logger.debug("Chunking text with page tracking...");
+      const chunksWithPages = await chunkingService.splitTextWithPages(rawText);
+      logger.info(`Generated ${chunksWithPages.length} chunks from document`);
 
       logger.debug("Saving chunks to database...");
 
-      const chunkData = chunks.map((content, index) => ({
+      const chunkData = chunksWithPages.map((chunk, index) => ({
         documentId: documentId,
-        content: content,
+        content: chunk.content,
         chunkIndex: index,
+        pageNumber: chunk.pageNumber,
       }));
       await db.documentChunk.createMany({
         data: chunkData,
@@ -51,7 +52,9 @@ const worker = new Worker(
         },
       });
       logger.debug("Generating embeddings...");
-      const embeddings = await embeddingService.createEmbeddings(chunks);
+      const embeddings = await embeddingService.createEmbeddings(
+        chunksWithPages.map((c) => c.content),
+      );
 
       logger.debug("Upserting to Vector DB...");
       await pineconeService.upsertChunks(
@@ -68,7 +71,7 @@ const worker = new Worker(
         data: {
           status: "INDEXED",
           pageCount: pdfData.numpages,
-          chunkCount: chunks.length,
+          chunkCount: chunksWithPages.length,
           indexedAt: new Date(),
         },
       });
