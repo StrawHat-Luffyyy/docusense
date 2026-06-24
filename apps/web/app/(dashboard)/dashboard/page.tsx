@@ -205,7 +205,10 @@ export default function DashboardPage() {
       </aside>
 
       <div className="flex-1 relative">
-        <ChatInterface />
+        <ChatInterface
+          documents={documents}
+          onMessageSent={fetchDashboardData}
+        />
       </div>
 
       {sharingDoc && (
