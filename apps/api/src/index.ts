@@ -28,6 +28,8 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
+  "https://docusense-web-ten.vercel.app",
+  ...env.ALLOW_ORIGINS.split(",").map((o) => o.trim()),
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
@@ -47,7 +49,7 @@ app.use(
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by strict CORS policy"));
+        callback(null, false);
       }
     },
     credentials: true,
