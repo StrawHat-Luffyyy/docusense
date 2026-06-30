@@ -218,6 +218,15 @@ export default function DashboardPage() {
           initialIsPublic={sharingDoc.isPublic}
           initialToken={sharingDoc.sharingToken}
           onClose={() => setSharingDoc(null)}
+          onShareChange={(isPublic, token) => {
+            setDocuments((prev) =>
+              prev.map((d) =>
+                d.id === sharingDoc.id
+                  ? { ...d, isPublic, sharingToken: token }
+                  : d,
+              ),
+            );
+          }}
         />
       )}
 

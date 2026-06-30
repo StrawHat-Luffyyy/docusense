@@ -32,9 +32,14 @@ export default function SharedDocumentPage() {
 
     const fetchDocument = async () => {
       try {
-        const response = await fetch(`/api/public/documents/${token}`, {
-          cache: "no-store",
-        });
+        const apiBaseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const response = await fetch(
+          `${apiBaseUrl}/api/public/documents/${token}`,
+          {
+            cache: "no-store",
+          },
+        );
         if (!response.ok) {
           throw new Error("Document not found or access revoked.");
         }

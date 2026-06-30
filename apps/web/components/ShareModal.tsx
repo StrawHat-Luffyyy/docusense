@@ -11,6 +11,7 @@ interface ShareModalProps {
   initialIsPublic: boolean;
   initialToken: string | null;
   onClose: () => void;
+  onShareChange?: (isPublic: boolean, token: string | null) => void;
 }
 
 export default function ShareModal({
@@ -19,6 +20,7 @@ export default function ShareModal({
   initialIsPublic,
   initialToken,
   onClose,
+  onShareChange,
 }: ShareModalProps) {
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [sharingToken, setSharingToken] = useState(initialToken);
@@ -38,6 +40,7 @@ export default function ShareModal({
       const { document } = response.data;
       setIsPublic(document.isPublic);
       setSharingToken(document.sharingToken);
+      onShareChange?.(document.isPublic, document.sharingToken);
 
       toast.success(
         document.isPublic
