@@ -5,10 +5,29 @@ import { useDropzone } from "react-dropzone";
 import { useAuth } from "@clerk/nextjs";
 import { apiClient } from "@/lib/api/client";
 import axios from "axios";
-import { UploadCloud, Loader2, CheckCircle, XCircle } from "lucide-react";
+import {
+  UploadCloud,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  FileText,
+  Cpu,
+  Layers,
+  Brain,
+  Database,
+} from "lucide-react";
 import { toast } from "sonner";
 
-type UploadState = "idle" | "uploading" | "success" | "error";
+type UploadState = "idle" | "uploading" | "processing" | "success" | "error";
+
+const PIPELINE_STAGES = [
+  { icon: UploadCloud, label: "Uploading", key: "uploading" },
+  { icon: FileText, label: "Extracting Text", key: "extracting" },
+  { icon: Layers, label: "Chunking", key: "chunking" },
+  { icon: Brain, label: "Generating Embeddings", key: "embedding" },
+  { icon: Database, label: "Indexing", key: "indexing" },
+  { icon: CheckCircle, label: "Complete", key: "complete" },
+];
 
 export function UploadDropzone({
   onUploadComplete,
@@ -17,6 +36,7 @@ export function UploadDropzone({
 }) {
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [progress, setProgress] = useState(0);
+  const [pipelineStage, setPipelineStage] = useState(0);
   const { getToken, orgId } = useAuth();
 
   const onDrop = useCallback(
@@ -26,6 +46,7 @@ export function UploadDropzone({
 
       setUploadState("uploading");
       setProgress(0);
+      setPipelineStage(0);
 
       try {
         const token = await getToken();
@@ -44,14 +65,14 @@ export function UploadDropzone({
           {
             filename: file.name,
             contentType: file.type,
-            mimeType: file.type, // Added to match the Prisma Document schema expectations
+            mimeType: file.type,
             sizeBytes: file.size,
             organizationId: orgId,
           },
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "x-organization-id": orgId, // Passes org context commonly expected by Clerk backend middlewares
+              "x-organization-id": orgId,
             },
           },
         );
@@ -69,11 +90,24 @@ export function UploadDropzone({
             }
           },
         });
+
+        // File uploaded, now trigger processing
+        setPipelineStage(1);
+        setUploadState("processing");
+
         await apiClient.post(
           `/api/documents/${documentId}/process`,
           {},
           { headers: { Authorization: `Bearer ${token}` } },
         );
+
+        // Simulate pipeline progression for visual feedback
+        const stages = [2, 3, 4, 5];
+        for (const stage of stages) {
+          await new Promise((r) => setTimeout(r, 600));
+          setPipelineStage(stage);
+        }
+
         setUploadState("success");
         toast.success("Document uploaded and queued for processing!");
         onUploadComplete?.();
@@ -102,6 +136,7 @@ export function UploadDropzone({
     },
     [getToken, orgId, onUploadComplete],
   );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: 1,
@@ -110,6 +145,7 @@ export function UploadDropzone({
     },
     maxSize: 50 * 1024 * 1024, // 50MB
   });
+
   return (
     <div
       {...getRootProps()}
@@ -130,7 +166,7 @@ export function UploadDropzone({
 
       ${isDragActive ? "border-zinc-500 bg-zinc-900" : "hover:border-zinc-700"}
 
-      ${uploadState === "uploading" ? "pointer-events-none" : ""}
+      ${uploadState === "uploading" || uploadState === "processing" ? "pointer-events-none" : ""}
     `}
     >
       <input {...getInputProps()} />
@@ -176,42 +212,109 @@ export function UploadDropzone({
               Browse files
             </button>
           </div>
-          <div className="flex gap-2 flex-wrap justify-center mt-6">
-            <div className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-400">
-              PDF
+
+          {/* Supported formats & processing info */}
+          <div className="mt-6 space-y-3 w-full max-w-sm">
+            <div className="flex items-center justify-between text-xs text-zinc-500 px-3 py-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+              <span>Supported Formats</span>
+              <span className="font-mono font-medium text-zinc-400">PDF</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-zinc-500 px-3 py-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+              <span>Maximum File Size</span>
+              <span className="font-mono font-medium text-zinc-400">50 MB</span>
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-zinc-500">Maximum file size: 50 MB</p>
+          <div className="mt-4 text-left w-full max-w-sm">
+            <p className="text-[10px] text-zinc-600 uppercase tracking-wider font-semibold mb-2 px-1">
+              Automatic Processing
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                "Text Extraction",
+                "Semantic Chunking",
+                "Embedding Generation",
+                "Vector Indexing",
+              ].map((step) => (
+                <span
+                  key={step}
+                  className="text-[10px] text-zinc-500 px-2 py-1 rounded-md bg-zinc-900/50 border border-zinc-800/50"
+                >
+                  {step}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {uploadState === "uploading" && (
+      {(uploadState === "uploading" || uploadState === "processing") && (
         <div className="w-full max-w-md px-8">
-          <div className="flex flex-col items-center">
-            <Loader2 className="w-8 h-8 animate-spin text-zinc-400 mb-4" />
-
-            <h3 className="font-medium">Uploading document...</h3>
-
+          <div className="flex flex-col items-center mb-6">
+            <Cpu className="w-8 h-8 text-zinc-400 mb-4 animate-pulse" />
+            <h3 className="font-medium">
+              {uploadState === "uploading"
+                ? "Uploading document..."
+                : "Processing pipeline..."}
+            </h3>
             <p className="text-sm text-zinc-500 mt-1">
-              Securely transferring file
+              {uploadState === "uploading"
+                ? "Securely transferring file"
+                : "Running RAG ingestion pipeline"}
             </p>
+          </div>
 
-            <div className="w-full mt-6">
-              <div className="h-2 rounded-full bg-zinc-900 overflow-hidden">
+          {/* Pipeline stages */}
+          <div className="space-y-1">
+            {PIPELINE_STAGES.map((stage, i) => {
+              const Icon = stage.icon;
+              const isActive = i === pipelineStage;
+              const isComplete = i < pipelineStage;
+              const isPending = i > pipelineStage;
+
+              return (
+                <div
+                  key={stage.key}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-zinc-800/50 border border-zinc-700"
+                      : isComplete
+                        ? "opacity-60"
+                        : "opacity-30"
+                  }`}
+                >
+                  {isComplete ? (
+                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                  ) : isActive ? (
+                    <Loader2 className="w-4 h-4 text-zinc-300 animate-spin shrink-0" />
+                  ) : (
+                    <Icon
+                      className={`w-4 h-4 shrink-0 ${isPending ? "text-zinc-600" : "text-zinc-400"}`}
+                    />
+                  )}
+                  <span
+                    className={`text-sm ${isActive ? "text-zinc-200 font-medium" : "text-zinc-500"}`}
+                  >
+                    {stage.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {uploadState === "uploading" && (
+            <div className="w-full mt-4">
+              <div className="h-1.5 rounded-full bg-zinc-900 overflow-hidden">
                 <div
                   className="h-full bg-zinc-200 transition-all"
-                  style={{
-                    width: `${progress}%`,
-                  }}
+                  style={{ width: `${progress}%` }}
                 />
               </div>
-
               <p className="mt-2 text-center text-sm text-zinc-400">
                 {progress}%
               </p>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -221,12 +324,15 @@ export function UploadDropzone({
 
           <h3 className="font-medium">Document uploaded</h3>
 
-          <p className="text-sm text-zinc-500 mt-2">Processing has started.</p>
+          <p className="text-sm text-zinc-500 mt-2">
+            RAG pipeline processing has started.
+          </p>
 
           <button
             onClick={(e) => {
               e.stopPropagation();
               setUploadState("idle");
+              setPipelineStage(0);
             }}
             className="
             mt-6
@@ -254,6 +360,7 @@ export function UploadDropzone({
             onClick={(e) => {
               e.stopPropagation();
               setUploadState("idle");
+              setPipelineStage(0);
             }}
             className="
             mt-6

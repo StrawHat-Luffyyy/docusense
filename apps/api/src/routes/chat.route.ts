@@ -89,11 +89,13 @@ chatRouter.post(
         return;
       }
 
+      const retrievalStart = Date.now();
       const contextChunks = await chatService.retrieveContext(
         tenantId,
         message,
         3,
       );
+      const retrievalTimeMs = Date.now() - retrievalStart;
 
       const contextText = buildContextWithSources(contextChunks);
 
@@ -118,6 +120,7 @@ chatRouter.post(
 
       logger.info(`Streaming LLM response for query: "${message}"`);
 
+      const generationStart = Date.now();
       // Wrap the Gemini call in retry logic
       const result = await withRetry(() =>
         model.generateContentStream(systemPrompt),
@@ -127,10 +130,35 @@ chatRouter.post(
         const chunkText = chunk.text();
         res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
       }
+      const generationTimeMs = Date.now() - generationStart;
 
       // Send citations as a final SSE event before closing the stream
       const citations = chatService.formatCitations(contextChunks);
       res.write(`data: ${JSON.stringify({ citations })}\n\n`);
+
+      // Send retrieval metadata for the Retrieval Inspector
+      const avgConfidence =
+        contextChunks.length > 0
+          ? Math.round(
+              (contextChunks.reduce((sum, c) => sum + c.score, 0) /
+                contextChunks.length) *
+                1000,
+            ) / 1000
+          : 0;
+
+      res.write(
+        `data: ${JSON.stringify({
+          metadata: {
+            retrievalTimeMs,
+            generationTimeMs,
+            chunksRetrieved: contextChunks.length,
+            avgConfidence,
+            citationCount: citations.length,
+            embeddingModel: "gemini-embedding-001",
+            llmModel: "gemini-2.5-flash",
+          },
+        })}\n\n`,
+      );
 
       res.write("data: [DONE]\n\n");
       res.end();

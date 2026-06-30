@@ -22,6 +22,7 @@ import { documentsRouter } from "./routes/documents.route.js";
 import { chatRouter } from "./routes/chat.route.js";
 import { publicRouter } from "./routes/public.route.js";
 import { usageRouter } from "./routes/usage.route.js";
+import { analyticsRouter } from "./routes/analytics.route.js";
 import { rateLimiters } from "./middleware/rateLimit.middleware.js";
 
 const app = express();
@@ -119,6 +120,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/chat", rateLimiters.chat, chatRouter);
 app.use("/api/usage", usageRouter);
+app.use("/api/analytics", analyticsRouter);
 
 // Test route to verify the error handler
 app.get("/api/test-error", () => {

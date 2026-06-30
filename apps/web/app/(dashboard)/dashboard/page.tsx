@@ -2,11 +2,20 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  FileText,
+  Layers,
+  HardDrive,
+  Clock,
+} from "lucide-react";
 import ChatInterface from "@/components/ChatInterface";
 import ShareModal from "@/components/ShareModal";
 import { UploadModal } from "@/components/documents/UploadModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import ActivityFeed from "@/components/ActivityFeed";
 import { apiClient } from "@/lib/api/client";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -16,36 +25,95 @@ const STATUS_STYLES: Record<string, string> = {
   FAILED: "bg-destructive/15 text-destructive",
   DELETED: "bg-muted text-muted-foreground",
 };
+
 type Document = {
   id: string;
   filename: string;
   status: string;
   isPublic: boolean;
   sharingToken: string | null;
+  pageCount: number | null;
+  chunkCount: number | null;
+  sizeBytes: number | null;
+  mimeType: string | null;
+  indexedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
+
+interface AnalyticsData {
+  knowledgeBase: {
+    totalDocuments: number;
+    totalChunks: number;
+    totalPages: number;
+    storageUsedBytes: number;
+    embeddingsGenerated: number;
+    statusBreakdown: Record<string, number>;
+  };
+  infrastructure: {
+    vectorStore: string;
+    embeddingModel: string;
+    llmProvider: string;
+    llmModel: string;
+    chunkingStrategy: string;
+    vectorDimensions: number;
+  };
+  usage: {
+    queryCount: number;
+    documentCount: number;
+    queryLimit: number;
+  };
+  activityFeed: Array<{
+    id: string;
+    filename: string;
+    action: string;
+    status: string;
+    timestamp: string;
+    sizeBytes: number;
+  }>;
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+function getRelativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
 export default function DashboardPage() {
   const { getToken } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [usageData, setUsageData] = useState({ queryCount: 0, limit: 100 });
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [sharingDoc, setSharingDoc] = useState<Document | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [docToDelete, setDocToDelete] = useState<Document | null>(null);
+
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [docsRes, usageRes] = await Promise.all([
+      const [docsRes, analyticsRes] = await Promise.all([
         apiClient.get("/api/documents"),
-        apiClient.get("/api/usage"),
+        apiClient.get("/api/analytics"),
       ]);
 
       setDocuments(docsRes.data.documents);
-
-      setUsageData({
-        queryCount: usageRes.data.usage.queryCount,
-        limit: usageRes.data.limit,
-      });
+      setAnalytics(analyticsRes.data);
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
     } finally {
@@ -89,10 +157,9 @@ export default function DashboardPage() {
     }
   };
 
-  const usagePercentage = Math.min(
-    (usageData.queryCount / usageData.limit) * 100,
-    100,
-  );
+  const queryCount = analytics?.usage?.queryCount ?? 0;
+  const queryLimit = analytics?.usage?.queryLimit ?? 100;
+  const usagePercentage = Math.min((queryCount / queryLimit) * 100, 100);
 
   return (
     <main className="flex h-screen bg-background text-foreground">
@@ -101,7 +168,9 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-sm font-semibold">Knowledge Library</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {documents.length} document{documents.length !== 1 ? "s" : ""}
+              {documents.length} document{documents.length !== 1 ? "s" : ""} ·{" "}
+              {(analytics?.knowledgeBase?.totalChunks ?? 0).toLocaleString()}{" "}
+              chunks
             </p>
           </div>
           <button
@@ -113,6 +182,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* Document List */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center mt-10">
@@ -137,11 +207,38 @@ export default function DashboardPage() {
                 className="group rounded-xl border border-border bg-background/40 hover:bg-background/70 hover:border-primary/40 transition-colors p-3"
               >
                 <p
-                  className="text-sm font-medium truncate mb-2"
+                  className="text-sm font-medium truncate mb-1.5"
                   title={doc.filename}
                 >
                   {doc.filename}
                 </p>
+
+                {/* Enhanced metadata row */}
+                <div className="flex items-center gap-2 mb-2 text-[10px] text-muted-foreground">
+                  {doc.sizeBytes && (
+                    <span className="flex items-center gap-0.5">
+                      <HardDrive className="w-2.5 h-2.5" />
+                      {formatBytes(doc.sizeBytes)}
+                    </span>
+                  )}
+                  {doc.pageCount && (
+                    <span className="flex items-center gap-0.5">
+                      <FileText className="w-2.5 h-2.5" />
+                      {doc.pageCount}p
+                    </span>
+                  )}
+                  {doc.chunkCount && (
+                    <span className="flex items-center gap-0.5">
+                      <Layers className="w-2.5 h-2.5" />
+                      {doc.chunkCount} chunks
+                    </span>
+                  )}
+                  <span className="flex items-center gap-0.5 ml-auto">
+                    <Clock className="w-2.5 h-2.5" />
+                    {getRelativeTime(doc.createdAt)}
+                  </span>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <span
                     className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wide font-semibold px-2 py-1 rounded-full ${
@@ -180,18 +277,24 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Activity Feed */}
+        {analytics?.activityFeed && analytics.activityFeed.length > 0 && (
+          <ActivityFeed items={analytics.activityFeed} />
+        )}
+
+        {/* Enhanced Usage Panel */}
         <div className="p-4 border-t border-border bg-card">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              AI Queries Used
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              AI Queries
             </span>
-            <span className="text-xs font-bold text-foreground">
-              {usageData.queryCount} / {usageData.limit}
+            <span className="text-xs font-bold text-foreground tabular-nums">
+              {queryCount} / {queryLimit}
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
+          <div className="w-full bg-muted rounded-full h-1.5 mb-3">
             <div
-              className={`h-2 rounded-full transition-all ${
+              className={`h-1.5 rounded-full transition-all ${
                 usagePercentage > 90
                   ? "bg-destructive"
                   : usagePercentage > 75
@@ -201,6 +304,26 @@ export default function DashboardPage() {
               style={{ width: `${usagePercentage}%` }}
             />
           </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground tabular-nums">
+                {analytics?.knowledgeBase?.statusBreakdown?.INDEXED ?? 0}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Indexed</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground tabular-nums">
+                {(analytics?.knowledgeBase?.totalChunks ?? 0).toLocaleString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Chunks</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-foreground tabular-nums">
+                {formatBytes(analytics?.knowledgeBase?.storageUsedBytes ?? 0)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Storage</p>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -208,6 +331,7 @@ export default function DashboardPage() {
         <ChatInterface
           documents={documents}
           onMessageSent={fetchDashboardData}
+          analytics={analytics}
         />
       </div>
 

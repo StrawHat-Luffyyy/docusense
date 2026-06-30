@@ -198,7 +198,12 @@ documentsRouter.get(
           isPublic: true,
           sharingToken: true,
           pageCount: true,
+          chunkCount: true,
+          sizeBytes: true,
+          mimeType: true,
+          indexedAt: true,
           createdAt: true,
+          updatedAt: true,
         },
       });
 

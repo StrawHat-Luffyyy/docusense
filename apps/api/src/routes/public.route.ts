@@ -23,6 +23,16 @@ publicRouter.get(
           pageCount: true,
           chunkCount: true,
           sharedAt: true,
+          sizeBytes: true,
+          mimeType: true,
+          createdAt: true,
+          updatedAt: true,
+          indexedAt: true,
+          organization: {
+            select: {
+              name: true,
+            },
+          },
         },
       });
       if (!document || !document.sharedAt) {
@@ -30,7 +40,14 @@ publicRouter.get(
           .status(404)
           .json({ error: "Shared document not found or link expired" });
       }
-      res.json({ document });
+      // Flatten org name into the response
+      const { organization, ...docFields } = document;
+      res.json({
+        document: {
+          ...docFields,
+          workspaceName: organization.name,
+        },
+      });
     } catch (error) {
       next(error);
     }
