@@ -10,6 +10,7 @@ jobs:
   install:
     name: Install Dependencies
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -17,25 +18,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: pnpm
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.3.0
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -57,14 +46,19 @@ jobs:
     name: Type Check
     needs: install
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: pnpm
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11.3.0
+
       - name: Restore workspace
         uses: actions/cache/restore@v4
         with:
@@ -74,6 +68,7 @@ jobs:
             apps/api/src/generated
             apps/web/node_modules
           key: workspace-${{ github.sha }}
+
       - name: Run type checking
         run: pnpm turbo typecheck
 
@@ -81,14 +76,19 @@ jobs:
     name: Lint
     needs: install
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: pnpm
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11.3.0
+
       - name: Restore workspace
         uses: actions/cache/restore@v4
         with:
@@ -98,6 +98,7 @@ jobs:
             apps/api/src/generated
             apps/web/node_modules
           key: workspace-${{ github.sha }}
+
       - name: Run linting
         run: pnpm turbo lint
 
@@ -105,14 +106,19 @@ jobs:
     name: Unit & Integration Tests
     needs: install
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: pnpm
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11.3.0
+
       - name: Restore workspace
         uses: actions/cache/restore@v4
         with:
@@ -122,8 +128,10 @@ jobs:
             apps/api/src/generated
             apps/web/node_modules
           key: workspace-${{ github.sha }}
+
       - name: Run tests
         run: pnpm --filter @docusense/api test
+
       - name: Run test coverage
         run: pnpm --filter @docusense/api test:coverage
         continue-on-error: true
@@ -132,14 +140,19 @@ jobs:
     name: Build Verification
     needs: [typecheck, lint, test]
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: pnpm
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11.3.0
+
       - name: Restore workspace
         uses: actions/cache/restore@v4
         with:
@@ -149,5 +162,6 @@ jobs:
             apps/api/src/generated
             apps/web/node_modules
           key: workspace-${{ github.sha }}
+
       - name: Build all packages
         run: pnpm turbo build
