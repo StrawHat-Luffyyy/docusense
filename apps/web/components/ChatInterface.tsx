@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Loader2, ArrowUp, FileText, Sparkles, X } from "lucide-react";
+import {
+  Loader2,
+  ArrowUp,
+  FileText,
+  Sparkles,
+  X,
+  Database,
+  Search,
+} from "lucide-react";
 import { useAuth } from "@clerk/nextjs"; // 1. Import Clerk auth hook
 
 interface Citation {
@@ -133,23 +141,6 @@ export default function ChatInterface({
     scrollToBottom();
   }, [messages]);
 
-  const indexedDocs = documents.filter((d) => d.status === "INDEXED");
-
-  const suggestions: string[] =
-    indexedDocs.length === 0
-      ? []
-      : indexedDocs.length === 1
-        ? [
-            `Summarize ${indexedDocs[0].filename}`,
-            `What are the key points in ${indexedDocs[0].filename}?`,
-          ]
-        : [
-            "Summarize all my documents",
-            `What's in ${indexedDocs[0].filename}?`,
-            `Compare ${indexedDocs[0].filename} and ${indexedDocs[1].filename}`,
-            "What topics come up most across my documents?",
-          ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -277,28 +268,41 @@ export default function ChatInterface({
                 </p>
               </div>
 
-              {suggestions.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 mt-10">
-                  {suggestions.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => setInput(prompt)}
-                      className="rounded-2xl border border-border p-4 text-left transition-all hover:bg-muted hover:border-primary/40 hover:-translate-y-0.5"
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <FileText className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <span className="text-sm font-medium leading-snug">
-                          {prompt}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+              <div className="mt-10 grid grid-cols-2 gap-4 max-w-2xl mx-auto animate-in fade-in duration-500">
+                <div className="rounded-2xl border border-border bg-card/40 p-5 text-left transition-colors hover:border-primary/20">
+                  <div className="flex items-center gap-3 mb-2.5 text-primary">
+                    <Database className="w-4 h-4" />
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Semantic Vector Indexing
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Documents are automatically parsed, chunked, and embedded
+                    into a vector space. Search queries retrieve context chunks
+                    based on cosine similarity confidence scores.
+                  </p>
                 </div>
-              ) : (
-                <div className="mt-10 rounded-2xl border border-dashed border-border p-8 text-center">
+
+                <div className="rounded-2xl border border-border bg-card/40 p-5 text-left transition-colors hover:border-primary/20">
+                  <div className="flex items-center gap-3 mb-2.5 text-primary">
+                    <Search className="w-4 h-4" />
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Grounded Citations
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    AI responses are strictly grounded in retrieved chunks.
+                    Every answer includes interactive badges referencing
+                    specific source documents and page numbers.
+                  </p>
+                </div>
+              </div>
+
+              {documents.length === 0 && (
+                <div className="mt-8 rounded-2xl border border-dashed border-border p-6 text-center bg-card/10 max-w-2xl mx-auto animate-in fade-in duration-300">
                   <p className="text-sm text-muted-foreground">
-                    Upload a document from the sidebar to start asking questions
-                    about it.
+                    Upload a PDF document from the sidebar to initialize the
+                    vector database.
                   </p>
                 </div>
               )}
