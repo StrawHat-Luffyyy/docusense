@@ -452,19 +452,19 @@ export default function ChatInterface({
               </div>
 
               {/* Capabilities Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto mb-8">
                 {CAPABILITIES.map((cap) => (
                   <div
                     key={cap.title}
-                    className="rounded-xl border border-border bg-card/30 p-4 hover:border-primary/20 transition-colors"
+                    className="rounded-xl border border-border bg-card/30 p-5 hover:border-primary/20 hover:bg-card/50 transition-colors"
                   >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <cap.icon className="w-3.5 h-3.5 text-primary" />
-                      <h3 className="text-xs font-semibold text-foreground">
+                    <div className="flex items-center gap-2.5 mb-2.5">
+                      <cap.icon className="w-4 h-4 text-primary" />
+                      <h3 className="text-sm font-semibold text-foreground">
                         {cap.title}
                       </h3>
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
                       {cap.desc}
                     </p>
                   </div>

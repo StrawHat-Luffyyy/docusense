@@ -157,6 +157,7 @@ export function UploadDropzone({
       justify-center
       w-full
       min-h-90
+      py-10
       rounded-3xl
       border
       border-zinc-800
