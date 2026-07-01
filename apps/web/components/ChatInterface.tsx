@@ -175,6 +175,143 @@ function CitationBadge({
 }
 
 /**
+ * Clickable inline superscript citation badge.
+ */
+function InlineCitationBadge({
+  citation,
+  index,
+}: {
+  citation: Citation;
+  index: number;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isOpen]);
+
+  return (
+    <span
+      className="relative inline-block"
+      ref={popoverRef}
+      style={{ verticalAlign: "super" }}
+    >
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center justify-center text-[9px] font-bold h-3.5 min-w-3.5 px-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/40 transition-colors mx-0.5 select-none cursor-pointer"
+        style={{ transform: "translateY(-2px)" }}
+        title={`Source: ${citation.documentName}`}
+      >
+        {index + 1}
+      </button>
+
+      {isOpen && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-80 rounded-xl border border-border bg-card shadow-xl p-4 block text-left font-normal normal-case not-italic leading-normal text-foreground">
+          <span className="flex items-start justify-between mb-3">
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold text-foreground truncate">
+                {citation.documentName}
+              </span>
+              <span className="flex items-center gap-2 mt-1">
+                {citation.pageNumber != null && (
+                  <span className="text-xs text-muted-foreground">
+                    Page {citation.pageNumber}
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  Chunk #{citation.chunkIndex + 1}
+                </span>
+                <span className="text-xs text-primary/70 font-medium">
+                  {Math.round(citation.score * 100)}% match
+                </span>
+              </span>
+            </span>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-muted-foreground hover:text-foreground p-0.5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </span>
+          <span className="block rounded-lg bg-muted/50 border border-border p-3">
+            <span className="block text-xs text-muted-foreground leading-relaxed whitespace-normal">
+              {citation.contentPreview}
+            </span>
+          </span>
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * Helper to parse text and replace [1], [2], etc. with interactive inline badges.
+ */
+function renderMessageContent(content: string, citations?: Citation[]) {
+  if (!content) return null;
+  if (!citations || citations.length === 0) {
+    return <span>{content}</span>;
+  }
+
+  const regex = /\[(\d+)\]/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    const matchIndex = match.index;
+    const matchText = match[0];
+    const citNumber = parseInt(match[1], 10);
+
+    if (matchIndex > lastIndex) {
+      parts.push(content.substring(lastIndex, matchIndex));
+    }
+
+    const citationIndex = citNumber - 1;
+    if (citationIndex >= 0 && citationIndex < citations.length) {
+      parts.push(
+        <InlineCitationBadge
+          key={`inline-cit-${matchIndex}`}
+          citation={citations[citationIndex]}
+          index={citationIndex}
+        />,
+      );
+    } else {
+      parts.push(matchText);
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+
+  return (
+    <>
+      {parts.map((part, index) =>
+        typeof part === "string" ? (
+          <React.Fragment key={index}>{part}</React.Fragment>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
+/**
  * Expandable retrieval inspector showing per-response metadata.
  */
 function RetrievalInspector({ metadata }: { metadata: RetrievalMetadata }) {
@@ -353,6 +490,7 @@ export default function ChatInterface({
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedResponse = "";
+      let buffer = "";
 
       setMessages((prev) => [
         ...prev,
@@ -362,8 +500,13 @@ export default function ChatInterface({
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        const chunkString = decoder.decode(value, { stream: true });
-        const lines = chunkString.split("\n\n");
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+
+        // Save the last element (which might be a partial line) back to the buffer
+        buffer = lines.pop() || "";
+
         for (const line of lines) {
           if (!line.trim() || !line.startsWith("data: ")) continue;
           const jsonString = line.replace("data: ", "").trim();
@@ -406,7 +549,12 @@ export default function ChatInterface({
               );
             }
           } catch (err) {
-            console.error("Error parsing SSE line:", err);
+            console.error(
+              "Error parsing SSE line:",
+              err,
+              "Line content:",
+              line,
+            );
           }
         }
       }
@@ -542,7 +690,9 @@ export default function ChatInterface({
                       {msg.role === "user" ? "You" : "DocuSense"}
                     </div>
                     <div className="leading-7 whitespace-pre-wrap text-base text-foreground">
-                      {msg.content || (
+                      {msg.content ? (
+                        renderMessageContent(msg.content, msg.citations)
+                      ) : (
                         <span className="inline-flex gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.3s]" />
                           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.15s]" />

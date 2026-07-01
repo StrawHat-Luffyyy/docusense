@@ -115,8 +115,12 @@ chatRouter.post(
       `;
 
       res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+
+      // Flush headers immediately to start SSE stream connection
+      res.flushHeaders();
 
       logger.info(`Streaming LLM response for query: "${message}"`);
 
@@ -129,6 +133,9 @@ chatRouter.post(
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
         res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
+        if (typeof (res as any).flush === "function") {
+          (res as any).flush();
+        }
       }
       const generationTimeMs = Date.now() - generationStart;
 
