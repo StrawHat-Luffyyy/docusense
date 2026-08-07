@@ -17,9 +17,10 @@ vi.mock("@clerk/express", () => ({
 }));
 
 const mockUserFindUnique = vi.fn();
-const mockUserUpsert = vi.fn();
+const mockUserCreate = vi.fn();
 const mockOrgFindUnique = vi.fn();
-const mockOrgUpsert = vi.fn();
+const mockOrgCreate = vi.fn();
+const mockOrgUpdate = vi.fn();
 const mockMemberFindFirst = vi.fn();
 const mockMemberUpsert = vi.fn();
 
@@ -27,11 +28,12 @@ vi.mock("../../config/database.js", () => ({
   db: {
     user: {
       findUnique: mockUserFindUnique,
-      upsert: mockUserUpsert,
+      create: mockUserCreate,
     },
     organization: {
       findUnique: mockOrgFindUnique,
-      upsert: mockOrgUpsert,
+      create: mockOrgCreate,
+      update: mockOrgUpdate,
     },
     organizationMember: {
       findFirst: mockMemberFindFirst,
@@ -93,7 +95,7 @@ describe("injectTenantContext middleware", () => {
       lastName: "Doe",
       imageUrl: "http://example.com/photo.png",
     });
-    mockUserUpsert.mockResolvedValue({
+    mockUserCreate.mockResolvedValue({
       id: "user_123",
       email: "user@example.com",
     });
@@ -105,7 +107,7 @@ describe("injectTenantContext middleware", () => {
       slug: "my-team",
       imageUrl: null,
     });
-    mockOrgUpsert.mockResolvedValue({
+    mockOrgCreate.mockResolvedValue({
       id: "internal-org-uuid-123",
       clerkOrgId: "org_clerk_123",
     });
@@ -116,8 +118,8 @@ describe("injectTenantContext middleware", () => {
 
     await injectTenantContext(req, res, next);
 
-    expect(mockUserUpsert).toHaveBeenCalled();
-    expect(mockOrgUpsert).toHaveBeenCalled();
+    expect(mockUserCreate).toHaveBeenCalled();
+    expect(mockOrgCreate).toHaveBeenCalled();
     expect(mockMemberUpsert).toHaveBeenCalled();
     expect(req.tenantId).toBe("internal-org-uuid-123");
     expect(req.tenantRole).toBe("ADMIN");
@@ -136,8 +138,8 @@ describe("injectTenantContext middleware", () => {
 
     await injectTenantContext(req, res, next);
 
-    expect(mockUserUpsert).not.toHaveBeenCalled();
-    expect(mockOrgUpsert).not.toHaveBeenCalled();
+    expect(mockUserCreate).not.toHaveBeenCalled();
+    expect(mockOrgCreate).not.toHaveBeenCalled();
     expect(mockMemberUpsert).not.toHaveBeenCalled();
     expect(req.tenantId).toBe("internal-org-uuid-123");
     expect(req.tenantRole).toBe("OWNER");

@@ -73,22 +73,39 @@ export const injectTenantContext = async (
       }
 
       const emailToUse = email || `${userId}@user.clerk`;
-      user = await db.user.upsert({
-        where: { id: userId },
-        update: {
-          email: emailToUse,
-          firstName,
-          lastName,
-          imageUrl,
-        },
-        create: {
-          id: userId,
-          email: emailToUse,
-          firstName,
-          lastName,
-          imageUrl,
-        },
+
+      // Check if user exists by email if not by ID
+      const existingUserByEmail = await db.user.findUnique({
+        where: { email: emailToUse },
       });
+
+      if (existingUserByEmail) {
+        user = existingUserByEmail;
+      } else {
+        try {
+          user = await db.user.create({
+            data: {
+              id: userId,
+              email: emailToUse,
+              firstName,
+              lastName,
+              imageUrl,
+            },
+          });
+        } catch (_createErr) {
+          // Fallback with timestamped unique email if collision occurs
+          const fallbackEmail = `${userId}-${Date.now()}@user.clerk`;
+          user = await db.user.create({
+            data: {
+              id: userId,
+              email: fallbackEmail,
+              firstName,
+              lastName,
+              imageUrl,
+            },
+          });
+        }
+      }
     }
 
     // 2. Ensure Organization exists in DB (JIT sync)
@@ -117,16 +134,39 @@ export const injectTenantContext = async (
         );
       }
 
-      organization = await db.organization.upsert({
-        where: { clerkOrgId: orgId },
-        update: { name, slug, imageUrl },
-        create: {
-          clerkOrgId: orgId,
-          name,
-          slug,
-          imageUrl,
-        },
+      // Check if organization exists by slug
+      const existingOrgBySlug = await db.organization.findUnique({
+        where: { slug },
       });
+
+      if (existingOrgBySlug) {
+        organization = await db.organization.update({
+          where: { id: existingOrgBySlug.id },
+          data: { clerkOrgId: orgId, name, imageUrl },
+        });
+      } else {
+        try {
+          organization = await db.organization.create({
+            data: {
+              clerkOrgId: orgId,
+              name,
+              slug,
+              imageUrl,
+            },
+          });
+        } catch (_createOrgErr) {
+          // Fallback with unique slug if slug collision occurs
+          const fallbackSlug = `${slug}-${Date.now().toString(36)}`;
+          organization = await db.organization.create({
+            data: {
+              clerkOrgId: orgId,
+              name,
+              slug: fallbackSlug,
+              imageUrl,
+            },
+          });
+        }
+      }
     }
 
     // 3. Ensure OrganizationMember exists in DB (JIT sync)
@@ -160,11 +200,15 @@ export const injectTenantContext = async (
     req.tenantRole = membership.role;
     next();
   } catch (error) {
-    logger.error({ err: error }, "Failed to inject tenant context");
+    const errMessage = (error as Error)?.message || "Unknown error";
+    logger.error(
+      { err: error, errorMessage: errMessage },
+      "Failed to inject tenant context",
+    );
     return next(
       new AppError(
         500,
-        "Internal Server Error: Failed to inject tenant context",
+        `Internal Server Error: Failed to inject tenant context (${errMessage})`,
       ),
     );
   }
