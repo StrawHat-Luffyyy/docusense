@@ -76,7 +76,7 @@ analyticsRouter.get(
       }
 
       // Build activity feed from recent document events
-      const activityFeed = recentDocs.map((doc) => {
+      const activityFeed = recentDocs.map((doc: any) => {
         let action = "uploaded";
         let timestamp = doc.createdAt;
 

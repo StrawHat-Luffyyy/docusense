@@ -67,7 +67,7 @@ export const chatService = {
     });
 
     // Enrich with scores and sort by score descending
-    const enriched: RetrievedChunk[] = chunks.map((chunk) => ({
+    const enriched: RetrievedChunk[] = chunks.map((chunk: any) => ({
       id: chunk.id,
       content: chunk.content,
       chunkIndex: chunk.chunkIndex,

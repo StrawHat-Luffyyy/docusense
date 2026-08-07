@@ -91,7 +91,7 @@ const worker = new Worker(
       throw error;
     }
   },
-  { connection: redis },
+  { connection: redis as any },
 );
 
 worker.on("ready", () => {
