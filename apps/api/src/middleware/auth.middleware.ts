@@ -172,7 +172,7 @@ export const injectTenantContext = async (
     // 3. Ensure OrganizationMember exists in DB (JIT sync)
     let membership = await db.organizationMember.findFirst({
       where: {
-        userId: userId,
+        userId: user.id,
         organizationId: organization.id,
       },
     });
@@ -183,13 +183,13 @@ export const injectTenantContext = async (
       membership = await db.organizationMember.upsert({
         where: {
           userId_organizationId: {
-            userId: userId,
+            userId: user.id,
             organizationId: organization.id,
           },
         },
         update: { role: mappedRole },
         create: {
-          userId: userId,
+          userId: user.id,
           organizationId: organization.id,
           role: mappedRole,
         },

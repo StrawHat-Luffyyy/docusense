@@ -35,23 +35,71 @@ authRouter.post(
 
       const emailToUse = primaryEmail || `${userId}@user.clerk`;
 
-      // Idempotent user upsert
-      const user = await db.user.upsert({
+      // Safe user lookup & upsert
+      let user = await db.user.findUnique({
         where: { id: userId },
-        update: {
-          email: emailToUse,
-          firstName,
-          lastName,
-          imageUrl,
-        },
-        create: {
-          id: userId,
-          email: emailToUse,
-          firstName,
-          lastName,
-          imageUrl,
-        },
       });
+
+      if (!user) {
+        const existingUserByEmail = await db.user.findUnique({
+          where: { email: emailToUse },
+        });
+
+        if (existingUserByEmail) {
+          user = await db.user.update({
+            where: { id: existingUserByEmail.id },
+            data: {
+              firstName: firstName || existingUserByEmail.firstName,
+              lastName: lastName || existingUserByEmail.lastName,
+              imageUrl: imageUrl || existingUserByEmail.imageUrl,
+            },
+          });
+        } else {
+          try {
+            user = await db.user.create({
+              data: {
+                id: userId,
+                email: emailToUse,
+                firstName,
+                lastName,
+                imageUrl,
+              },
+            });
+          } catch (_createErr) {
+            const fallbackEmail = `${userId}-${Date.now()}@user.clerk`;
+            user = await db.user.create({
+              data: {
+                id: userId,
+                email: fallbackEmail,
+                firstName,
+                lastName,
+                imageUrl,
+              },
+            });
+          }
+        }
+      } else {
+        try {
+          user = await db.user.update({
+            where: { id: userId },
+            data: {
+              email: emailToUse,
+              firstName,
+              lastName,
+              imageUrl,
+            },
+          });
+        } catch (_updateErr) {
+          user = await db.user.update({
+            where: { id: userId },
+            data: {
+              firstName,
+              lastName,
+              imageUrl,
+            },
+          });
+        }
+      }
 
       // If orgId is present in active auth session, sync organization & membership too
       let organization = orgId
