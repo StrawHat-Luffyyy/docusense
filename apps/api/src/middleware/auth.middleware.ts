@@ -1,8 +1,21 @@
 import { Request, Response, NextFunction } from "express";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { db } from "../config/database.js";
 import { AppError } from "./errorHandler.js";
 import { Role } from "../generated/prisma/enums.js";
+import { logger } from "../utils/logger.js";
+
+function mapClerkRoleToRole(clerkRole?: string | null): Role {
+  if (!clerkRole) return Role.MEMBER;
+  const roleUpper = clerkRole.toUpperCase();
+  if (roleUpper.includes("OWNER") || roleUpper.includes("CREATOR")) {
+    return Role.OWNER;
+  }
+  if (roleUpper.includes("ADMIN")) {
+    return Role.ADMIN;
+  }
+  return Role.MEMBER;
+}
 
 export const requireAuth = async (
   req: Request,
@@ -23,37 +36,131 @@ export const injectTenantContext = async (
 ) => {
   try {
     const auth = getAuth(req);
-    const { userId, orgId } = auth;
+    const { userId, orgId, orgRole, orgSlug } = auth;
+
+    if (!userId) {
+      return next(new AppError(401, "Unauthorized: Please sign in"));
+    }
+
     if (!orgId) {
       return next(
         new AppError(403, "Forbidden: No active organization selected"),
       );
     }
-    const organization = await db.organization.findUnique({
+
+    // 1. Ensure User exists in DB (JIT sync)
+    let user = await db.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      let email: string | undefined;
+      let firstName: string | null = null;
+      let lastName: string | null = null;
+      let imageUrl: string | null = null;
+
+      try {
+        const clerkUser = await clerkClient.users.getUser(userId);
+        email = clerkUser.emailAddresses[0]?.emailAddress;
+        firstName = clerkUser.firstName;
+        lastName = clerkUser.lastName;
+        imageUrl = clerkUser.imageUrl;
+      } catch (err) {
+        logger.warn(
+          { err, userId },
+          "Failed to fetch user from Clerk API, using fallback",
+        );
+      }
+
+      const emailToUse = email || `${userId}@user.clerk`;
+      user = await db.user.upsert({
+        where: { id: userId },
+        update: {
+          email: emailToUse,
+          firstName,
+          lastName,
+          imageUrl,
+        },
+        create: {
+          id: userId,
+          email: emailToUse,
+          firstName,
+          lastName,
+          imageUrl,
+        },
+      });
+    }
+
+    // 2. Ensure Organization exists in DB (JIT sync)
+    let organization = await db.organization.findUnique({
       where: { clerkOrgId: orgId },
     });
+
     if (!organization) {
-      return next(new AppError(403, "Forbidden: Organization not found"));
+      let name = orgSlug || `Org ${orgId.slice(0, 8)}`;
+      let slug = orgSlug || orgId;
+      let imageUrl: string | null = null;
+
+      try {
+        const clerkOrg = await clerkClient.organizations.getOrganization({
+          organizationId: orgId,
+        });
+        if (clerkOrg) {
+          name = clerkOrg.name || name;
+          slug = clerkOrg.slug || slug;
+          imageUrl = clerkOrg.imageUrl || null;
+        }
+      } catch (err) {
+        logger.warn(
+          { err, orgId },
+          "Failed to fetch org from Clerk API, using fallback",
+        );
+      }
+
+      organization = await db.organization.upsert({
+        where: { clerkOrgId: orgId },
+        update: { name, slug, imageUrl },
+        create: {
+          clerkOrgId: orgId,
+          name,
+          slug,
+          imageUrl,
+        },
+      });
     }
-    const membership = await db.organizationMember.findFirst({
+
+    // 3. Ensure OrganizationMember exists in DB (JIT sync)
+    let membership = await db.organizationMember.findFirst({
       where: {
         userId: userId,
         organizationId: organization.id,
       },
     });
+
     if (!membership) {
-      return next(
-        new AppError(
-          403,
-          "Forbidden: User is not a member of the organization",
-        ),
-      );
+      const mappedRole = mapClerkRoleToRole(orgRole);
+
+      membership = await db.organizationMember.upsert({
+        where: {
+          userId_organizationId: {
+            userId: userId,
+            organizationId: organization.id,
+          },
+        },
+        update: { role: mappedRole },
+        create: {
+          userId: userId,
+          organizationId: organization.id,
+          role: mappedRole,
+        },
+      });
     }
 
     req.tenantId = organization.id;
     req.tenantRole = membership.role;
     next();
-  } catch (_error) {
+  } catch (error) {
+    logger.error({ err: error }, "Failed to inject tenant context");
     return next(
       new AppError(
         500,
