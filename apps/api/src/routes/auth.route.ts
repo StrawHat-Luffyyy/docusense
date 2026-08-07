@@ -54,8 +54,13 @@ authRouter.post(
       });
 
       // If orgId is present in active auth session, sync organization & membership too
-      let organization = null;
-      if (orgId) {
+      let organization = orgId
+        ? await db.organization.findUnique({
+            where: { clerkOrgId: orgId },
+          })
+        : null;
+
+      if (orgId && !organization) {
         let name = orgSlug || `Org ${orgId.slice(0, 8)}`;
         let slug = orgSlug || orgId;
         let orgImageUrl: string | null = null;
@@ -76,17 +81,40 @@ authRouter.post(
           );
         }
 
-        organization = await db.organization.upsert({
-          where: { clerkOrgId: orgId },
-          update: { name, slug, imageUrl: orgImageUrl },
-          create: {
-            clerkOrgId: orgId,
-            name,
-            slug,
-            imageUrl: orgImageUrl,
-          },
+        const existingOrgBySlug = await db.organization.findUnique({
+          where: { slug },
         });
 
+        if (existingOrgBySlug) {
+          organization = await db.organization.update({
+            where: { id: existingOrgBySlug.id },
+            data: { clerkOrgId: orgId, name, imageUrl: orgImageUrl },
+          });
+        } else {
+          try {
+            organization = await db.organization.create({
+              data: {
+                clerkOrgId: orgId,
+                name,
+                slug,
+                imageUrl: orgImageUrl,
+              },
+            });
+          } catch (_createOrgErr) {
+            const fallbackSlug = `${slug}-${Date.now().toString(36)}`;
+            organization = await db.organization.create({
+              data: {
+                clerkOrgId: orgId,
+                name,
+                slug: fallbackSlug,
+                imageUrl: orgImageUrl,
+              },
+            });
+          }
+        }
+      }
+
+      if (organization) {
         const roleUpper = (orgRole || "").toUpperCase();
         let role: Role = Role.MEMBER;
         if (roleUpper.includes("OWNER") || roleUpper.includes("CREATOR")) {
