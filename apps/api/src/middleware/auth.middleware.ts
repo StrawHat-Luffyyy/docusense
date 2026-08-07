@@ -49,7 +49,11 @@ export const injectTenantContext = async (
     }
 
     // All DB operations wrapped in withRetry for Render DB hibernation resilience
-    const { user, organization, membership } = await withRetry(async () => {
+    const {
+      user: _user,
+      organization,
+      membership,
+    } = await withRetry(async () => {
       // 1. Ensure User exists in DB (JIT sync)
       let resolvedUser = await db.user.findUnique({
         where: { id: userId },
