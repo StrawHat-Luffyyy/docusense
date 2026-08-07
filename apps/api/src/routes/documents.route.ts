@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import { enqueueDocumentProcessing } from "../queues/ingestion.queue.js";
 import crypto from "crypto";
 import { rateLimiters } from "../middleware/rateLimit.middleware.js";
+import { AppError } from "../middleware/errorHandler.js";
 
 export const documentsRouter = express.Router();
 
@@ -20,21 +21,46 @@ documentsRouter.post(
   rateLimiters.upload,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { filename, contentType, sizeBytes } = req.body;
-      const tenantId = req.tenantId!;
-      if (!ALLOWED_MIME_TYPES.includes(contentType)) {
-        return res.status(400).json({ error: "File type not supported" });
+      const { filename, contentType, sizeBytes } = req.body || {};
+      if (!filename || typeof filename !== "string") {
+        return res.status(400).json({ error: "Filename is required" });
+      }
+      if (!contentType || !ALLOWED_MIME_TYPES.includes(contentType)) {
+        return res
+          .status(400)
+          .json({
+            error: "File type not supported. Only PDF files are allowed.",
+          });
+      }
+      if (!sizeBytes || typeof sizeBytes !== "number" || sizeBytes <= 0) {
+        return res
+          .status(400)
+          .json({ error: "Valid file sizeBytes is required" });
       }
       if (sizeBytes > 50 * 1024 * 1024) {
         return res.status(400).json({ error: "File exceeds 50MB limit" });
       }
+
+      const tenantId = req.tenantId!;
       const documentId = randomUUID();
       const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
       const storageKey = `${tenantId}/documents/${documentId}/${sanitizedFilename}`;
-      const uploadUrl = await s3Service.createPresignedPutUrl(
-        storageKey,
-        contentType,
-      );
+
+      let uploadUrl: string;
+      try {
+        uploadUrl = await s3Service.createPresignedPutUrl(
+          storageKey,
+          contentType,
+        );
+      } catch (s3Error: any) {
+        return next(
+          new AppError(
+            500,
+            `Storage configuration error: ${s3Error?.message || "Failed to create upload URL"}`,
+          ),
+        );
+      }
+
       await db.$transaction([
         db.document.create({
           data: {
@@ -60,6 +86,7 @@ documentsRouter.post(
           },
         }),
       ]);
+
       res.status(200).json({
         documentId,
         uploadUrl,
