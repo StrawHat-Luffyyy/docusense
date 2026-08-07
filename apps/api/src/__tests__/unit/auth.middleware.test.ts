@@ -40,6 +40,7 @@ vi.mock("../../config/database.js", () => ({
       upsert: mockMemberUpsert,
     },
   },
+  withRetry: async (fn: () => Promise<any>) => fn(),
 }));
 
 const { injectTenantContext } =

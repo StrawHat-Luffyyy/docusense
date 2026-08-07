@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { getAuth, clerkClient } from "@clerk/express";
-import { db } from "../config/database.js";
+import { db, withRetry } from "../config/database.js";
 import { logger } from "../utils/logger.js";
 import { Role } from "../generated/prisma/enums.js";
 
@@ -35,42 +35,65 @@ authRouter.post(
 
       const emailToUse = primaryEmail || `${userId}@user.clerk`;
 
-      // Safe user lookup & upsert
-      let user = await db.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (!user) {
-        const existingUserByEmail = await db.user.findUnique({
-          where: { email: emailToUse },
+      // All DB operations wrapped in withRetry for Render DB hibernation resilience
+      const { user, organization } = await withRetry(async () => {
+        let resolvedUser = await db.user.findUnique({
+          where: { id: userId },
         });
 
-        if (existingUserByEmail) {
-          user = await db.user.update({
-            where: { id: existingUserByEmail.id },
-            data: {
-              firstName: firstName || existingUserByEmail.firstName,
-              lastName: lastName || existingUserByEmail.lastName,
-              imageUrl: imageUrl || existingUserByEmail.imageUrl,
-            },
+        if (!resolvedUser) {
+          const existingUserByEmail = await db.user.findUnique({
+            where: { email: emailToUse },
           });
+
+          if (existingUserByEmail) {
+            resolvedUser = await db.user.update({
+              where: { id: existingUserByEmail.id },
+              data: {
+                firstName: firstName || existingUserByEmail.firstName,
+                lastName: lastName || existingUserByEmail.lastName,
+                imageUrl: imageUrl || existingUserByEmail.imageUrl,
+              },
+            });
+          } else {
+            try {
+              resolvedUser = await db.user.create({
+                data: {
+                  id: userId,
+                  email: emailToUse,
+                  firstName,
+                  lastName,
+                  imageUrl,
+                },
+              });
+            } catch (_createErr) {
+              const fallbackEmail = `${userId}-${Date.now()}@user.clerk`;
+              resolvedUser = await db.user.create({
+                data: {
+                  id: userId,
+                  email: fallbackEmail,
+                  firstName,
+                  lastName,
+                  imageUrl,
+                },
+              });
+            }
+          }
         } else {
           try {
-            user = await db.user.create({
+            resolvedUser = await db.user.update({
+              where: { id: userId },
               data: {
-                id: userId,
                 email: emailToUse,
                 firstName,
                 lastName,
                 imageUrl,
               },
             });
-          } catch (_createErr) {
-            const fallbackEmail = `${userId}-${Date.now()}@user.clerk`;
-            user = await db.user.create({
+          } catch (_updateErr) {
+            resolvedUser = await db.user.update({
+              where: { id: userId },
               data: {
-                id: userId,
-                email: fallbackEmail,
                 firstName,
                 lastName,
                 imageUrl,
@@ -78,114 +101,95 @@ authRouter.post(
             });
           }
         }
-      } else {
-        try {
-          user = await db.user.update({
-            where: { id: userId },
-            data: {
-              email: emailToUse,
-              firstName,
-              lastName,
-              imageUrl,
-            },
-          });
-        } catch (_updateErr) {
-          user = await db.user.update({
-            where: { id: userId },
-            data: {
-              firstName,
-              lastName,
-              imageUrl,
-            },
-          });
-        }
-      }
 
-      // If orgId is present in active auth session, sync organization & membership too
-      let organization = orgId
-        ? await db.organization.findUnique({
-            where: { clerkOrgId: orgId },
-          })
-        : null;
+        // Sync organization if orgId present
+        let resolvedOrg = orgId
+          ? await db.organization.findUnique({
+              where: { clerkOrgId: orgId },
+            })
+          : null;
 
-      if (orgId && !organization) {
-        let name = orgSlug || `Org ${orgId.slice(0, 8)}`;
-        let slug = orgSlug || orgId;
-        let orgImageUrl: string | null = null;
+        if (orgId && !resolvedOrg) {
+          let name = orgSlug || `Org ${orgId.slice(0, 8)}`;
+          let slug = orgSlug || orgId;
+          let orgImageUrl: string | null = null;
 
-        try {
-          const clerkOrg = await clerkClient.organizations.getOrganization({
-            organizationId: orgId,
-          });
-          if (clerkOrg) {
-            name = clerkOrg.name || name;
-            slug = clerkOrg.slug || slug;
-            orgImageUrl = clerkOrg.imageUrl || null;
-          }
-        } catch (err) {
-          logger.warn(
-            { err, orgId },
-            "clerkClient.organizations.getOrganization failed in sync route",
-          );
-        }
-
-        const existingOrgBySlug = await db.organization.findUnique({
-          where: { slug },
-        });
-
-        if (existingOrgBySlug) {
-          organization = await db.organization.update({
-            where: { id: existingOrgBySlug.id },
-            data: { clerkOrgId: orgId, name, imageUrl: orgImageUrl },
-          });
-        } else {
           try {
-            organization = await db.organization.create({
-              data: {
-                clerkOrgId: orgId,
-                name,
-                slug,
-                imageUrl: orgImageUrl,
-              },
+            const clerkOrg = await clerkClient.organizations.getOrganization({
+              organizationId: orgId,
             });
-          } catch (_createOrgErr) {
-            const fallbackSlug = `${slug}-${Date.now().toString(36)}`;
-            organization = await db.organization.create({
-              data: {
-                clerkOrgId: orgId,
-                name,
-                slug: fallbackSlug,
-                imageUrl: orgImageUrl,
-              },
+            if (clerkOrg) {
+              name = clerkOrg.name || name;
+              slug = clerkOrg.slug || slug;
+              orgImageUrl = clerkOrg.imageUrl || null;
+            }
+          } catch (err) {
+            logger.warn(
+              { err, orgId },
+              "clerkClient.organizations.getOrganization failed in sync route",
+            );
+          }
+
+          const existingOrgBySlug = await db.organization.findUnique({
+            where: { slug },
+          });
+
+          if (existingOrgBySlug) {
+            resolvedOrg = await db.organization.update({
+              where: { id: existingOrgBySlug.id },
+              data: { clerkOrgId: orgId, name, imageUrl: orgImageUrl },
             });
+          } else {
+            try {
+              resolvedOrg = await db.organization.create({
+                data: {
+                  clerkOrgId: orgId,
+                  name,
+                  slug,
+                  imageUrl: orgImageUrl,
+                },
+              });
+            } catch (_createOrgErr) {
+              const fallbackSlug = `${slug}-${Date.now().toString(36)}`;
+              resolvedOrg = await db.organization.create({
+                data: {
+                  clerkOrgId: orgId,
+                  name,
+                  slug: fallbackSlug,
+                  imageUrl: orgImageUrl,
+                },
+              });
+            }
           }
         }
-      }
 
-      if (organization) {
-        const roleUpper = (orgRole || "").toUpperCase();
-        let role: Role = Role.MEMBER;
-        if (roleUpper.includes("OWNER") || roleUpper.includes("CREATOR")) {
-          role = Role.OWNER;
-        } else if (roleUpper.includes("ADMIN")) {
-          role = Role.ADMIN;
+        if (resolvedOrg) {
+          const roleUpper = (orgRole || "").toUpperCase();
+          let role: Role = Role.MEMBER;
+          if (roleUpper.includes("OWNER") || roleUpper.includes("CREATOR")) {
+            role = Role.OWNER;
+          } else if (roleUpper.includes("ADMIN")) {
+            role = Role.ADMIN;
+          }
+
+          await db.organizationMember.upsert({
+            where: {
+              userId_organizationId: {
+                userId: resolvedUser.id,
+                organizationId: resolvedOrg.id,
+              },
+            },
+            update: { role },
+            create: {
+              userId: resolvedUser.id,
+              organizationId: resolvedOrg.id,
+              role,
+            },
+          });
         }
 
-        await db.organizationMember.upsert({
-          where: {
-            userId_organizationId: {
-              userId: user.id,
-              organizationId: organization.id,
-            },
-          },
-          update: { role },
-          create: {
-            userId: user.id,
-            organizationId: organization.id,
-            role,
-          },
-        });
-      }
+        return { user: resolvedUser, organization: resolvedOrg };
+      });
 
       res.status(200).json({ success: true, user, organization });
     } catch (error) {
