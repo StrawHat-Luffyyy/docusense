@@ -7,9 +7,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:worker": "tsx watch src/workers/ingestion.worker.ts",
-    "build": "prisma generate && prisma migrate deploy && tsc",
+    "build": "prisma generate && tsc",
     "prestart": "prisma migrate deploy",
-    "start": "node dist/index.js",
+    "start": "prisma migrate deploy && node dist/index.js",
     "start:worker": "node dist/workers/ingestion.worker.js",
     "start:all": "node dist/index.js & node dist/workers/ingestion.worker.js",
     "typecheck": "tsc --noEmit",
