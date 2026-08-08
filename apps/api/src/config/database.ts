@@ -1,36 +1,28 @@
 import { PrismaClient } from "../generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
 import { env } from "./env.js";
 import { logger } from "../utils/logger.js";
 
 const prismaClientSingleton = () => {
   const connectionString = env.DATABASE_URL;
-  const isProduction =
-    env.NODE_ENV === "production" || Boolean(process.env.RENDER);
+  const isRemoteDb =
+    env.NODE_ENV === "production" ||
+    Boolean(process.env.RENDER) ||
+    connectionString.includes("render.com") ||
+    connectionString.includes("sslmode=") ||
+    (!connectionString.includes("localhost") &&
+      !connectionString.includes("127.0.0.1"));
 
-  const pool = new pg.Pool({
+  const adapter = new PrismaPg({
     connectionString,
-    // Connection pool sizing
     max: 10,
     min: 0,
-    // Timeout configs for Render hibernation resilience
-    connectionTimeoutMillis: 30_000, // 30s to establish a new connection (DB may be waking up)
-    idleTimeoutMillis: 30_000, // close idle connections after 30s
-    // Allow stale connections to be replaced
+    connectionTimeoutMillis: 30_000,
+    idleTimeoutMillis: 30_000,
     allowExitOnIdle: true,
-    ...(isProduction ? { ssl: { rejectUnauthorized: false } } : {}),
+    ...(isRemoteDb ? { ssl: { rejectUnauthorized: false } } : {}),
   });
 
-  // Log pool errors instead of crashing the process
-  pool.on("error", (err) => {
-    logger.error(
-      { err },
-      "Unexpected pg.Pool error (connection will be retried)",
-    );
-  });
-
-  const adapter = new PrismaPg(pool as any);
   return new PrismaClient({ adapter });
 };
 

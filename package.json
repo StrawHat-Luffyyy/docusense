@@ -19,5 +19,8 @@
     "lint-staged": "^17.0.7",
     "prettier": "^3.8.3",
     "turbo": "^2.9.16"
+  },
+  "resolutions": {
+    "@types/pg": "^8.20.4"
   }
 }
