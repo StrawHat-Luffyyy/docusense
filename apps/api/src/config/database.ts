@@ -42,41 +42,94 @@ export const db = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 if (env.NODE_ENV !== "production") globalThis.prismaGlobal = db;
 
+export interface WithRetryOptions {
+  context?: string;
+  maxRetries?: number;
+  delayMs?: number;
+}
+
 /**
  * Retry wrapper for Prisma operations that may fail due to
- * transient ECONNREFUSED errors (e.g. Render DB waking from hibernation).
+ * transient ECONNREFUSED or database hibernation errors.
  *
  * Usage:
- *   const user = await withRetry(() => db.user.findUnique({ where: { id } }));
+ *   const user = await withRetry(() => db.user.findUnique({ where: { id } }), "user.findUnique");
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  maxRetries = 3,
+  optsOrContextOrMaxRetries: WithRetryOptions | string | number = 4,
   delayMs = 1000,
+  contextParam?: string,
 ): Promise<T> {
+  let maxRetries = 4;
+  let delay = delayMs;
+  let context: string | undefined = contextParam;
+
+  if (typeof optsOrContextOrMaxRetries === "string") {
+    context = optsOrContextOrMaxRetries;
+  } else if (typeof optsOrContextOrMaxRetries === "number") {
+    maxRetries = optsOrContextOrMaxRetries;
+  } else if (
+    typeof optsOrContextOrMaxRetries === "object" &&
+    optsOrContextOrMaxRetries !== null
+  ) {
+    context = optsOrContextOrMaxRetries.context;
+    maxRetries = optsOrContextOrMaxRetries.maxRetries ?? 4;
+    delay = optsOrContextOrMaxRetries.delayMs ?? 1000;
+  }
+
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error: any) {
       lastError = error;
+      const code = error?.code;
+      const message = error?.message || "";
       const isRetryable =
-        error?.code === "ECONNREFUSED" ||
-        error?.code === "ECONNRESET" ||
-        error?.code === "ETIMEDOUT" ||
-        error?.code === "EPIPE" ||
-        error?.message?.includes("ECONNREFUSED") ||
-        error?.message?.includes("Connection terminated") ||
-        error?.message?.includes("connection to server");
+        code === "ECONNREFUSED" ||
+        code === "ECONNRESET" ||
+        code === "ETIMEDOUT" ||
+        code === "EPIPE" ||
+        code === "57P01" ||
+        code === "P1001" || // Can't reach database server
+        code === "P1002" || // Database server reached but timed out
+        code === "P1003" || // Database file does not exist
+        code === "P1008" || // Operations timed out
+        code === "P1017" || // Server has closed the connection
+        message.includes("ECONNREFUSED") ||
+        message.includes("ECONNRESET") ||
+        message.includes("Connection terminated") ||
+        message.includes("connection to server") ||
+        message.includes("Can't reach database server") ||
+        message.includes("PrismaClientInitializationError");
 
       if (isRetryable && attempt < maxRetries) {
-        const backoff = delayMs * attempt;
+        const backoff = delay * Math.pow(2, attempt - 1);
         logger.warn(
-          { attempt, maxRetries, code: error?.code, backoff },
-          `DB operation failed with retryable error, retrying in ${backoff}ms...`,
+          {
+            context: context || "unspecified",
+            attempt,
+            maxRetries,
+            code,
+            backoff,
+            errorMessage: message,
+          },
+          `[DB RETRY] Operation ${context ? `'${context}' ` : ""}failed with retryable error (${code || "NO_CODE"}), retrying in ${backoff}ms...`,
         );
         await new Promise((resolve) => setTimeout(resolve, backoff));
       } else {
+        logger.error(
+          {
+            context: context || "unspecified",
+            attempt,
+            maxRetries,
+            isRetryable,
+            code,
+            err: error,
+          },
+          `[DB FAILURE] Operation ${context ? `'${context}' ` : ""}failed permanently after ${attempt} attempt(s)`,
+        );
         throw error;
       }
     }

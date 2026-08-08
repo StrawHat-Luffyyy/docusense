@@ -207,13 +207,40 @@ export const injectTenantContext = async (
         organization: resolvedOrg,
         membership: resolvedMembership,
       };
-    });
+    }, "injectTenantContext");
 
     req.tenantId = organization.id;
     req.tenantRole = membership.role;
     next();
   } catch (error) {
+    const code = (error as any)?.code;
     const errMessage = (error as Error)?.message || "Unknown error";
+    const isDbUnreachable =
+      code === "ECONNREFUSED" ||
+      code === "ECONNRESET" ||
+      code === "ETIMEDOUT" ||
+      code === "57P01" ||
+      code === "P1001" ||
+      code === "P1002" ||
+      code === "P1017" ||
+      errMessage.includes("ECONNREFUSED") ||
+      errMessage.includes("Can't reach database server") ||
+      errMessage.includes("Connection terminated") ||
+      errMessage.includes("connection to server");
+
+    if (isDbUnreachable) {
+      logger.error(
+        { err: error, code, isDbConnectionError: true },
+        "[DB UNREACHABLE] Database connection failed during tenant context injection. Check DATABASE_URL and Postgres status.",
+      );
+      return next(
+        new AppError(
+          500,
+          `Database Connection Error: Unable to reach database server (${errMessage})`,
+        ),
+      );
+    }
+
     logger.error(
       { err: error, errorMessage: errMessage },
       "Failed to inject tenant context",
