@@ -3,6 +3,7 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  "@clerk/shared": set this to true or false
   "@prisma/engines": false
   esbuild: false
   msgpackr-extract: false
