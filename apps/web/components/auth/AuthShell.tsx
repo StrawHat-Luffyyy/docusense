@@ -40,26 +40,78 @@ export function AuthShell({ children, title, description }: AuthShellProps) {
         </div>
 
         {/* Decorative Graphic/Pattern */}
-        <div className="relative mt-16 w-full max-w-md z-10 opacity-0 animate-fade-in-up delay-200">
-          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-30 blur-lg transition-all duration-1000"></div>
-          <div className="relative rounded-2xl border border-white/10 bg-zinc-900/80 p-6 backdrop-blur-xl shadow-2xl">
-            <div className="flex items-center gap-4 border-b border-white/10 pb-5 mb-5">
-              <div className="h-12 w-12 rounded-xl bg-indigo-500/20 flex items-center justify-center ring-1 ring-indigo-500/30">
-                <Database className="h-6 w-6 text-indigo-400" />
+        <div className="relative mt-12 w-full max-w-[440px] z-10 opacity-0 animate-fade-in-up delay-200 perspective-1000">
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 to-purple-600/20 blur-xl transition-all duration-1000"></div>
+
+          <div className="relative rounded-xl border border-white/10 bg-zinc-950/80 p-1 backdrop-blur-2xl shadow-2xl flex overflow-hidden h-[340px]">
+            {/* Glossy overlay */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none z-20" />
+
+            {/* Sidebar */}
+            <div className="w-36 border-r border-white/5 p-3 flex flex-col gap-4 bg-zinc-900/30 text-white/80">
+              <div className="flex items-center gap-2 mb-2 opacity-90">
+                <Database className="h-4 w-4 text-indigo-400" />
+                <span className="text-xs font-semibold tracking-tight">
+                  DocuSense
+                </span>
               </div>
-              <div>
-                <h3 className="font-bold text-white text-lg tracking-tight">
-                  Enterprise RAG
-                </h3>
-                <p className="text-sm text-zinc-400 font-medium mt-0.5">
-                  High-performance vector search
-                </p>
+              <div className="space-y-1">
+                <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+                  Knowledge Base
+                </div>
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-medium border border-indigo-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>{" "}
+                  Search & Chat
+                </div>
+              </div>
+              <div className="space-y-1 mt-2">
+                <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+                  Documents
+                </div>
+                <div className="text-[10px] text-zinc-400 px-2 py-1 truncate">
+                  Q3_Security_Guidelines.pdf
+                </div>
+                <div className="text-[10px] text-zinc-400 px-2 py-1 truncate">
+                  Architecture_v2.pdf
+                </div>
+                <div className="text-[10px] text-zinc-400 px-2 py-1 truncate">
+                  Engineering_Handbook.pdf
+                </div>
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="h-2.5 w-3/4 rounded-full bg-zinc-700/50"></div>
-              <div className="h-2.5 w-1/2 rounded-full bg-zinc-700/50"></div>
-              <div className="h-2.5 w-5/6 rounded-full bg-zinc-700/50"></div>
+
+            {/* Main Area */}
+            <div className="flex-1 flex flex-col relative bg-[#09090b]/40">
+              {/* Fake Header */}
+              <div className="h-10 border-b border-white/5 flex items-center px-4 gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
+                  <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
+                  <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
+                </div>
+              </div>
+
+              {/* Chat UI */}
+              <div className="flex-1 p-4 flex flex-col justify-end gap-3 relative z-10 bg-dot-pattern">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:16px_16px]" />
+
+                <div className="flex justify-end relative z-10">
+                  <div className="bg-indigo-600 text-white/90 text-[10px] px-3 py-2 rounded-xl rounded-tr-sm max-w-[85%] shadow-md leading-relaxed">
+                    What are the security requirements for Q3?
+                  </div>
+                </div>
+
+                <div className="flex justify-start relative z-10">
+                  <div className="bg-zinc-900 border border-white/10 text-zinc-300 text-[10px] p-3 rounded-xl rounded-tl-sm max-w-[90%] shadow-sm leading-relaxed">
+                    <div className="flex items-center gap-1.5 mb-2 text-indigo-400 font-medium">
+                      <Database className="h-3 w-3" />
+                      DocuSense AI
+                    </div>
+                    Based on your indexed documents, the requirements include
+                    SOC2 compliance and MFA enforcement.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

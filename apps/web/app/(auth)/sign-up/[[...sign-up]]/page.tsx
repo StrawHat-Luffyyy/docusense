@@ -1,4 +1,4 @@
-import { SignUp } from "@clerk/nextjs";
+import { CustomSignUp } from "@/components/auth/CustomSignUp";
 import { AuthShell } from "@/components/auth/AuthShell";
 
 export default function SignUpPage() {
@@ -7,7 +7,7 @@ export default function SignUpPage() {
       title="Get Started"
       description="Create an account to start building your intelligent document repository."
     >
-      <SignUp />
+      <CustomSignUp />
     </AuthShell>
   );
 }

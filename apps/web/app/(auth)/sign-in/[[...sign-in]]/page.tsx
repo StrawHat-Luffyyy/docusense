@@ -1,4 +1,4 @@
-import { SignIn } from "@clerk/nextjs";
+import { CustomSignIn } from "@/components/auth/CustomSignIn";
 import { AuthShell } from "@/components/auth/AuthShell";
 
 export default function SignInPage() {
@@ -7,7 +7,7 @@ export default function SignInPage() {
       title="Welcome back"
       description="Sign in to continue chatting with your enterprise knowledge base."
     >
-      <SignIn />
+      <CustomSignIn />
     </AuthShell>
   );
 }
