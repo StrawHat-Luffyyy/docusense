@@ -4,8 +4,8 @@ import { Database } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 font-sans">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 opacity-0 animate-fade-in delay-300">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8 xl:col-span-1">
             <Link href="/" className="flex items-center gap-2">
