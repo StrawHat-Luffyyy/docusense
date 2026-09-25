@@ -18,11 +18,11 @@ import ActivityFeed from "@/components/ActivityFeed";
 import { apiClient } from "@/lib/api/client";
 
 const STATUS_STYLES: Record<string, string> = {
-  INDEXED: "bg-success/15 text-success",
-  PROCESSING: "bg-warning/15 text-warning",
-  PENDING: "bg-muted text-muted-foreground",
-  FAILED: "bg-destructive/15 text-destructive",
-  DELETED: "bg-muted text-muted-foreground",
+  INDEXED: "bg-emerald-500/15 text-emerald-400",
+  PROCESSING: "bg-amber-500/15 text-amber-400",
+  PENDING: "bg-zinc-800 text-zinc-400",
+  FAILED: "bg-red-500/15 text-red-400",
+  DELETED: "bg-zinc-800 text-zinc-400",
 };
 
 type Document = {
@@ -154,12 +154,15 @@ export default function DashboardPage() {
   const usagePercentage = Math.min((queryCount / queryLimit) * 100, 100);
 
   return (
-    <main className="flex h-screen bg-background text-foreground">
-      <aside className="w-85 shrink-0 border-r border-border bg-card flex flex-col">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+    <>
+      {/* Middle Column: Knowledge Library */}
+      <aside className="w-80 shrink-0 border-r border-white/5 bg-zinc-950 flex flex-col">
+        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
           <div>
-            <h1 className="text-sm font-semibold">Knowledge Library</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <h1 className="text-sm font-semibold text-white">
+              Knowledge Library
+            </h1>
+            <p className="text-xs text-zinc-400 mt-0.5">
               {documents.length} document{documents.length !== 1 ? "s" : ""} ·{" "}
               {(analytics?.knowledgeBase?.totalChunks ?? 0).toLocaleString()}{" "}
               chunks
@@ -167,7 +170,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="flex items-center justify-center w-7 h-7 rounded-lg border border-border hover:bg-background/60 transition-colors"
+            className="flex items-center justify-center w-7 h-7 rounded-lg border border-white/10 text-zinc-300 hover:bg-white/5 transition-colors"
             title="Add documents"
           >
             <Plus className="w-4 h-4" />
@@ -177,17 +180,17 @@ export default function DashboardPage() {
         {/* Document List */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground text-center mt-10">
+            <p className="text-sm text-zinc-500 text-center mt-10">
               Loading workspace...
             </p>
           ) : documents.length === 0 ? (
             <div className="text-center mt-10 px-4">
-              <p className="text-sm text-muted-foreground mb-3">
+              <p className="text-sm text-zinc-400 mb-3">
                 No documents uploaded yet.
               </p>
               <button
                 onClick={() => setIsUploadOpen(true)}
-                className="text-xs font-medium text-primary hover:text-primary/80"
+                className="text-xs font-medium text-indigo-400 hover:text-indigo-300"
               >
                 Upload your first document
               </button>
@@ -196,17 +199,17 @@ export default function DashboardPage() {
             documents.map((doc) => (
               <div
                 key={doc.id}
-                className="group rounded-xl border border-border bg-background/40 hover:bg-background/70 hover:border-primary/40 transition-colors p-3"
+                className="group rounded-xl border border-white/5 bg-zinc-900/40 hover:bg-zinc-800/80 hover:border-indigo-500/30 transition-all p-3"
               >
                 <p
-                  className="text-sm font-medium truncate mb-1.5"
+                  className="text-sm font-medium truncate mb-1.5 text-zinc-200"
                   title={doc.filename}
                 >
                   {doc.filename}
                 </p>
 
                 {/* Enhanced metadata row */}
-                <div className="flex items-center gap-2 mb-2 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-2 mb-3 text-[10px] text-zinc-500 font-medium">
                   {doc.sizeBytes && (
                     <span className="flex items-center gap-0.5">
                       <HardDrive className="w-2.5 h-2.5" />
@@ -238,7 +241,7 @@ export default function DashboardPage() {
                     }`}
                   >
                     {doc.status === "PROCESSING" && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
                     )}
                     {doc.status}
                   </span>
@@ -246,14 +249,14 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => setSharingDoc(doc)}
-                      className="text-xs font-medium text-primary hover:text-primary/80"
+                      className="text-xs font-medium text-indigo-400 hover:text-indigo-300"
                     >
                       Share
                     </button>
                     <button
                       onClick={() => setDocToDelete(doc)}
                       disabled={deletingId === doc.id}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      className="text-zinc-500 hover:text-red-400 transition-colors"
                       title="Delete document"
                     >
                       {deletingId === doc.id ? (
@@ -275,45 +278,45 @@ export default function DashboardPage() {
         )}
 
         {/* Enhanced Usage Panel */}
-        <div className="p-4 border-t border-border bg-card">
+        <div className="p-4 border-t border-white/5 bg-zinc-950/50">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
               AI Queries
             </span>
-            <span className="text-xs font-bold text-foreground tabular-nums">
+            <span className="text-xs font-bold text-zinc-300 tabular-nums">
               {queryCount} / {queryLimit}
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-1.5 mb-3">
+          <div className="w-full bg-zinc-900 rounded-full h-1.5 mb-4">
             <div
               className={`h-1.5 rounded-full transition-all ${
                 usagePercentage > 90
-                  ? "bg-destructive"
+                  ? "bg-red-500"
                   : usagePercentage > 75
-                    ? "bg-warning"
-                    : "bg-primary"
+                    ? "bg-amber-500"
+                    : "bg-indigo-500"
               }`}
               style={{ width: `${usagePercentage}%` }}
             />
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="text-center">
-              <p className="text-sm font-bold text-foreground tabular-nums">
+              <p className="text-sm font-bold text-zinc-200 tabular-nums">
                 {analytics?.knowledgeBase?.statusBreakdown?.INDEXED ?? 0}
               </p>
-              <p className="text-[10px] text-muted-foreground">Indexed</p>
+              <p className="text-[10px] text-zinc-500">Indexed</p>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-foreground tabular-nums">
+            <div className="text-center border-l border-white/5">
+              <p className="text-sm font-bold text-zinc-200 tabular-nums">
                 {(analytics?.knowledgeBase?.totalChunks ?? 0).toLocaleString()}
               </p>
-              <p className="text-[10px] text-muted-foreground">Chunks</p>
+              <p className="text-[10px] text-zinc-500">Chunks</p>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-foreground tabular-nums">
+            <div className="text-center border-l border-white/5">
+              <p className="text-sm font-bold text-zinc-200 tabular-nums">
                 {formatBytes(analytics?.knowledgeBase?.storageUsedBytes ?? 0)}
               </p>
-              <p className="text-[10px] text-muted-foreground">Storage</p>
+              <p className="text-[10px] text-zinc-500">Storage</p>
             </div>
           </div>
         </div>
@@ -360,6 +363,6 @@ export default function DashboardPage() {
           onCancel={() => setDocToDelete(null)}
         />
       )}
-    </main>
+    </>
   );
 }

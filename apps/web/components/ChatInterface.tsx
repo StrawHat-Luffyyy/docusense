@@ -124,47 +124,47 @@ function CitationBadge({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
-          bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+          bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors border border-indigo-500/20"
         title={`Source: ${citation.documentName}`}
       >
         <FileText className="w-3 h-3" />
         <span>[{index + 1}]</span>
         <span className="max-w-[120px] truncate">{citation.documentName}</span>
         {citation.pageNumber != null && (
-          <span className="text-primary/60">p.{citation.pageNumber}</span>
+          <span className="text-indigo-400/60">p.{citation.pageNumber}</span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 z-50 w-80 rounded-xl border border-border bg-card shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="absolute bottom-full left-0 mb-2 z-50 w-80 rounded-xl border border-white/10 bg-zinc-900 shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">
+              <p className="text-sm font-semibold text-zinc-100 truncate">
                 {citation.documentName}
               </p>
               <div className="flex items-center gap-2 mt-1">
                 {citation.pageNumber != null && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-zinc-400">
                     Page {citation.pageNumber}
                   </span>
                 )}
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-zinc-400">
                   Chunk #{citation.chunkIndex + 1}
                 </span>
-                <span className="text-xs text-primary/70 font-medium">
+                <span className="text-xs text-indigo-400 font-medium">
                   {Math.round(citation.score * 100)}% match
                 </span>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-muted-foreground hover:text-foreground p-0.5"
+              className="text-zinc-500 hover:text-zinc-300 p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="rounded-lg bg-muted/50 border border-border p-3">
-            <p className="text-xs text-muted-foreground leading-relaxed">
+          <div className="rounded-lg bg-zinc-950/50 border border-white/5 p-3">
+            <p className="text-xs text-zinc-400 leading-relaxed">
               {citation.contentPreview}
             </p>
           </div>
@@ -209,7 +209,7 @@ function InlineCitationBadge({
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center justify-center text-[9px] font-bold h-3.5 min-w-3.5 px-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:border-primary/40 transition-colors mx-0.5 select-none cursor-pointer"
+        className="inline-flex items-center justify-center text-[9px] font-bold h-3.5 min-w-3.5 px-0.5 rounded bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 hover:border-indigo-500/40 transition-colors mx-0.5 select-none cursor-pointer"
         style={{ transform: "translateY(-2px)" }}
         title={`Source: ${citation.documentName}`}
       >
@@ -217,35 +217,35 @@ function InlineCitationBadge({
       </button>
 
       {isOpen && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-80 rounded-xl border border-border bg-card shadow-xl p-4 block text-left font-normal normal-case not-italic leading-normal text-foreground">
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-80 rounded-xl border border-white/10 bg-zinc-900 shadow-xl p-4 block text-left font-normal normal-case not-italic leading-normal text-zinc-200">
           <span className="flex items-start justify-between mb-3">
             <span className="flex-1 min-w-0">
-              <span className="block text-sm font-semibold text-foreground truncate">
+              <span className="block text-sm font-semibold text-zinc-100 truncate">
                 {citation.documentName}
               </span>
               <span className="flex items-center gap-2 mt-1">
                 {citation.pageNumber != null && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-zinc-400">
                     Page {citation.pageNumber}
                   </span>
                 )}
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-zinc-400">
                   Chunk #{citation.chunkIndex + 1}
                 </span>
-                <span className="text-xs text-primary/70 font-medium">
+                <span className="text-xs text-indigo-400 font-medium">
                   {Math.round(citation.score * 100)}% match
                 </span>
               </span>
             </span>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-muted-foreground hover:text-foreground p-0.5"
+              className="text-zinc-500 hover:text-zinc-300 p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </span>
-          <span className="block rounded-lg bg-muted/50 border border-border p-3">
-            <span className="block text-xs text-muted-foreground leading-relaxed whitespace-normal">
+          <span className="block rounded-lg bg-zinc-950/50 border border-white/5 p-3">
+            <span className="block text-xs text-zinc-400 leading-relaxed whitespace-normal">
               {citation.contentPreview}
             </span>
           </span>
@@ -321,7 +321,7 @@ function RetrievalInspector({ metadata }: { metadata: RetrievalMetadata }) {
     <div className="mt-3">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
       >
         <BarChart3 className="w-3 h-3" />
         Retrieval Inspector
@@ -332,61 +332,57 @@ function RetrievalInspector({ metadata }: { metadata: RetrievalMetadata }) {
         )}
       </button>
       {isExpanded && (
-        <div className="mt-2 rounded-lg border border-border bg-card/50 p-3 animate-in fade-in duration-200">
+        <div className="mt-2 rounded-lg border border-white/5 bg-zinc-900/50 p-3 animate-in fade-in duration-200">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 Chunks
               </p>
-              <p className="text-sm font-bold text-foreground tabular-nums">
+              <p className="text-sm font-bold text-zinc-200 tabular-nums">
                 {metadata.chunksRetrieved}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 Confidence
               </p>
-              <p className="text-sm font-bold text-foreground tabular-nums">
+              <p className="text-sm font-bold text-zinc-200 tabular-nums">
                 {Math.round(metadata.avgConfidence * 100)}%
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 Retrieval
               </p>
-              <p className="text-sm font-bold text-foreground tabular-nums">
+              <p className="text-sm font-bold text-zinc-200 tabular-nums">
                 {metadata.retrievalTimeMs}ms
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
                 Generation
               </p>
-              <p className="text-sm font-bold text-foreground tabular-nums">
+              <p className="text-sm font-bold text-zinc-200 tabular-nums">
                 {metadata.generationTimeMs}ms
               </p>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-3">
+          <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-muted-foreground">
-                Embedding:
-              </span>
-              <span className="text-[10px] font-mono font-medium text-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-zinc-500">Embedding:</span>
+              <span className="text-[10px] font-mono font-medium text-zinc-300 bg-white/5 px-1.5 py-0.5 rounded">
                 {metadata.embeddingModel}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-muted-foreground">LLM:</span>
-              <span className="text-[10px] font-mono font-medium text-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-zinc-500">LLM:</span>
+              <span className="text-[10px] font-mono font-medium text-zinc-300 bg-white/5 px-1.5 py-0.5 rounded">
                 {metadata.llmModel}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-muted-foreground">
-                Citations:
-              </span>
-              <span className="text-[10px] font-mono font-medium text-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-zinc-500">Citations:</span>
+              <span className="text-[10px] font-mono font-medium text-zinc-300 bg-white/5 px-1.5 py-0.5 rounded">
                 {metadata.citationCount}
               </span>
             </div>
@@ -579,131 +575,123 @@ export default function ChatInterface({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-full bg-zinc-950 relative">
       {messages.length === 0 ? (
-        <>
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto px-6 pt-12 pb-8">
-              {/* Enterprise Knowledge Assistant Header */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-5">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <h1 className="text-2xl font-semibold tracking-tight">
-                  Enterprise Knowledge Assistant
-                </h1>
-                <p className="mt-2 text-muted-foreground text-sm max-w-lg mx-auto">
-                  Search your indexed documents using semantic retrieval.
-                  Responses are grounded using retrieved document chunks and
-                  include source citations.
-                </p>
-              </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-500/10 via-zinc-950 to-zinc-950 pointer-events-none" />
 
-              {/* Capabilities Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto mb-8">
-                {CAPABILITIES.map((cap) => (
-                  <div
-                    key={cap.title}
-                    className="rounded-xl border border-border bg-card/30 p-5 hover:border-primary/20 hover:bg-card/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5 mb-2.5">
-                      <cap.icon className="w-4 h-4 text-primary" />
-                      <h3 className="text-sm font-semibold text-foreground">
-                        {cap.title}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {cap.desc}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Knowledge Base Panel (Analytics + Pipeline) */}
-              {analytics && (
-                <KnowledgeBasePanel
-                  knowledgeBase={analytics.knowledgeBase}
-                  infrastructure={analytics.infrastructure}
-                />
-              )}
-
-              {documents.length === 0 && (
-                <div className="mt-6 rounded-2xl border border-dashed border-border p-6 text-center bg-card/10 max-w-2xl mx-auto animate-in fade-in duration-300">
-                  <p className="text-sm text-muted-foreground">
-                    Upload a PDF document from the sidebar to initialize the
-                    vector database.
-                  </p>
-                </div>
-              )}
+          <div className="max-w-2xl w-full flex flex-col items-center text-center relative z-10 animate-fade-in-up">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-500/20 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/10">
+              <Sparkles className="w-8 h-8 text-indigo-400" />
             </div>
-          </div>
 
-          <div className="pb-8 px-6">
-            <div className="max-w-4xl mx-auto">
-              <form onSubmit={handleSubmit}>
-                <div className="flex items-center gap-3 rounded-3xl border border-border bg-card px-4 py-3 shadow-sm focus-within:border-primary/50 transition-colors">
+            <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight mb-4">
+              How can I help you?
+            </h1>
+            <p className="text-zinc-400 text-lg max-w-xl mb-12">
+              Ask questions about your uploaded documents, extract insights, or
+              summarize complex topics.
+            </p>
+
+            <div className="w-full max-w-3xl">
+              <form onSubmit={handleSubmit} className="relative group">
+                <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-indigo-500/30 to-purple-500/30 blur opacity-30 group-focus-within:opacity-100 transition duration-500" />
+                <div className="relative flex items-center bg-zinc-900 border border-white/10 rounded-3xl px-6 py-4 shadow-2xl">
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Ask anything about your documents..."
                     disabled={isLoading}
-                    className="flex-1 bg-transparent outline-none text-base"
+                    className="flex-1 bg-transparent border-none outline-none text-zinc-100 text-lg placeholder:text-zinc-500"
+                    autoFocus
                   />
                   <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
-                    className="h-9 w-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
+                    className="ml-3 h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-indigo-500 text-white hover:bg-indigo-400 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all shadow-lg"
                   >
                     {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                      <ArrowUp className="h-4 w-4" />
+                      <ArrowUp className="w-5 h-5" />
                     )}
                   </button>
                 </div>
               </form>
+
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => setInput("Summarize the most recent document")}
+                  className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm text-zinc-400 hover:bg-white/10 hover:text-zinc-200 transition-colors"
+                >
+                  Summarize the latest document
+                </button>
+                <button
+                  onClick={() =>
+                    setInput("What are the key security requirements?")
+                  }
+                  className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm text-zinc-400 hover:bg-white/10 hover:text-zinc-200 transition-colors"
+                >
+                  Find security requirements
+                </button>
+                <button
+                  onClick={() => setInput("Extract the main action items")}
+                  className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm text-zinc-400 hover:bg-white/10 hover:text-zinc-200 transition-colors"
+                >
+                  Extract action items
+                </button>
+              </div>
             </div>
+
+            {documents.length === 0 && (
+              <div className="mt-12 rounded-2xl border border-dashed border-white/10 p-6 text-center bg-white/5 max-w-lg mx-auto animate-in fade-in duration-300">
+                <p className="text-sm text-zinc-400">
+                  Upload a PDF document from the Knowledge Library to initialize
+                  the vector database and start querying.
+                </p>
+              </div>
+            )}
           </div>
-        </>
+        </div>
       ) : (
         <>
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-4xl mx-auto px-6 py-12">
               {messages.map((msg) => (
-                <div key={msg.id} className="mb-8 flex gap-3">
+                <div key={msg.id} className="mb-8 flex gap-4">
                   <div
-                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                    className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
                       msg.role === "user"
-                        ? "bg-muted text-foreground"
-                        : "bg-primary/15 text-primary"
+                        ? "bg-zinc-800 text-zinc-300"
+                        : "bg-indigo-500/20 text-indigo-400 border border-indigo-500/20"
                     }`}
                   >
                     {msg.role === "user" ? (
-                      "Y"
+                      "U"
                     ) : (
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <Sparkles className="w-4 h-4" />
                     )}
                   </div>
-                  <div className="flex-1 pt-0.5">
-                    <div className="text-sm font-medium text-muted-foreground mb-1.5">
-                      {msg.role === "user" ? "You" : "DocuSense"}
+                  <div className="flex-1 pt-1">
+                    <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+                      {msg.role === "user" ? "You" : "DocuSense AI"}
                     </div>
-                    <div className="leading-7 whitespace-pre-wrap text-base text-foreground">
+                    <div className="leading-relaxed whitespace-pre-wrap text-[15px] text-zinc-200">
                       {msg.content ? (
                         renderMessageContent(msg.content, msg.citations)
                       ) : (
-                        <span className="inline-flex gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.3s]" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.15s]" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" />
+                        <span className="inline-flex gap-1.5 items-center h-6">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/50 animate-bounce [animation-delay:-0.3s]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/50 animate-bounce [animation-delay:-0.15s]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/50 animate-bounce" />
                         </span>
                       )}
                     </div>
 
                     {/* Citation badges */}
                     {msg.citations && msg.citations.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-4 flex flex-wrap gap-2">
                         {msg.citations.map((citation, i) => (
                           <CitationBadge
                             key={citation.chunkId}
@@ -725,27 +713,37 @@ export default function ChatInterface({
             </div>
           </div>
 
-          <div className="border-t border-border bg-background/90 backdrop-blur">
-            <div className="max-w-4xl mx-auto p-6">
-              <form onSubmit={handleSubmit}>
-                <div className="flex items-center gap-3 rounded-3xl border border-border bg-card px-4 py-3 focus-within:border-primary/50 transition-colors">
+          <div className="border-t border-white/5 bg-zinc-950/80 backdrop-blur-md pt-4 pb-6">
+            <div className="max-w-4xl mx-auto px-6">
+              <form onSubmit={handleSubmit} className="relative">
+                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-zinc-900 px-4 py-3 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all shadow-lg">
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Ask a follow-up..."
                     disabled={isLoading}
-                    className="flex-1 bg-transparent outline-none text-base"
+                    className="flex-1 bg-transparent outline-none text-zinc-100 placeholder:text-zinc-500"
                   />
                   <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
-                    className="rounded-xl px-4 py-2 bg-primary text-primary-foreground font-medium disabled:opacity-50 transition-opacity"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-indigo-500 text-white hover:bg-indigo-400 disabled:opacity-50 transition-colors"
                   >
-                    {isLoading ? "Thinking..." : "Send"}
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ArrowUp className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </form>
+              <div className="mt-2 text-center">
+                <p className="text-[10px] text-zinc-500 font-medium">
+                  DocuSense AI can make mistakes. Verify important information
+                  with the source citations.
+                </p>
+              </div>
             </div>
           </div>
         </>
