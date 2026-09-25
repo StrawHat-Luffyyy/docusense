@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, UserButton } from "@clerk/nextjs";
 import { useAuthSync } from "../../hooks/useAuthSync";
 import { TenantSwitcher } from "../../components/layout/TenantSwitcher";
 import { Loader2 } from "lucide-react";
@@ -61,16 +61,39 @@ export default function DashboardLayout({
         bg-zinc-950
         flex
         flex-col
+        justify-between
       "
       >
-        {/* Logo */}
-        <div className="px-6 py-6 border-b border-zinc-800">
-          <h1 className="text-xl font-semibold tracking-tight">DocuSense</h1>
+        <div>
+          {/* Logo */}
+          <div className="px-6 py-6 border-b border-zinc-800">
+            <h1 className="text-xl font-semibold tracking-tight">DocuSense</h1>
+          </div>
+
+          {/* Workspace */}
+          <div className="px-4 py-4">
+            <TenantSwitcher />
+          </div>
         </div>
 
-        {/* Workspace */}
-        <div className="px-4 py-4">
-          <TenantSwitcher />
+        {/* User profile / Logout */}
+        <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
+          <UserButton
+            showName
+            appearance={{
+              elements: {
+                userButtonBox:
+                  "flex flex-row-reverse w-full justify-between items-center",
+                userButtonOuterIdentifier: "text-zinc-300 font-medium",
+                userButtonPopoverCard: "bg-zinc-950 border border-zinc-800",
+                userButtonPopoverActionButton:
+                  "hover:bg-zinc-900 text-zinc-300",
+                userButtonPopoverActionButtonText: "text-zinc-300",
+                userButtonPopoverActionButtonIcon: "text-zinc-400",
+                userButtonPopoverFooter: "hidden",
+              },
+            }}
+          />
         </div>
       </aside>
 
