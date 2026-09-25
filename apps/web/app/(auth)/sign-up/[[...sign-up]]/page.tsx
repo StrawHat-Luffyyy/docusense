@@ -1,9 +1,13 @@
 import { SignUp } from "@clerk/nextjs";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+    <AuthShell
+      title="Get Started"
+      description="Create an account to start building your intelligent document repository."
+    >
       <SignUp />
-    </div>
+    </AuthShell>
   );
 }

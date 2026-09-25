@@ -31,7 +31,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: "#4f46e5",
+          colorBackground: "white",
+        },
+        elements: {
+          card: "shadow-xl border border-zinc-200 dark:border-zinc-800",
+        },
+      }}
+    >
       <ClerkTokenInitializer>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryClientProvider client={queryClient}>
