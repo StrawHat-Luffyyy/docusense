@@ -2,17 +2,40 @@ import { Request, Response, NextFunction } from "express";
 import { redis } from "../config/redis.js";
 import { logger } from "../utils/logger.js";
 
-interface RateLimitOptions {
+export interface RateLimitOptions {
   /** Time window in seconds */
   windowSec: number;
   /** Maximum requests allowed per window */
   maxRequests: number;
   /** Key prefix for Redis */
   prefix?: string;
+  /** If true, strictly reject requests (503) when Redis fails instead of using in-memory fallback */
+  failClosed?: boolean;
 }
 
+// In-memory fallback sliding window store for Redis outages
+const memoryFallbackStore = new Map<string, number[]>();
+
+export function resetMemoryFallbackStore() {
+  memoryFallbackStore.clear();
+}
+
+// Prune stale in-memory entries periodically (unref'd to prevent keeping Node process alive)
+const pruneTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamps] of memoryFallbackStore.entries()) {
+    const valid = timestamps.filter((t) => now - t < 300_000);
+    if (valid.length === 0) {
+      memoryFallbackStore.delete(key);
+    } else {
+      memoryFallbackStore.set(key, valid);
+    }
+  }
+}, 300_000);
+pruneTimer.unref();
+
 /**
- * Redis-based sliding window rate limiter middleware.
+ * Redis-based sliding window rate limiter middleware with in-memory resilience.
  *
  * Uses a sorted set per key with timestamps as scores. On each request:
  * 1. Remove entries older than the window
@@ -20,10 +43,14 @@ interface RateLimitOptions {
  * 3. If under limit, add current timestamp and allow
  * 4. If over limit, reject with 429 + Retry-After header
  *
+ * Resilience:
+ * If Redis is unavailable, requests are protected by an in-memory sliding window
+ * fallback rather than completely failing open to unlimited traffic.
+ *
  * Key strategy: per-tenant for authenticated routes (uses req.tenantId).
  */
 export function rateLimit(options: RateLimitOptions) {
-  const { windowSec, maxRequests, prefix = "rl" } = options;
+  const { windowSec, maxRequests, prefix = "rl", failClosed = false } = options;
 
   return async (req: Request, res: Response, next: NextFunction) => {
     // Use tenantId for authenticated routes, fall back to IP
@@ -77,8 +104,35 @@ export function rateLimit(options: RateLimitOptions) {
 
       next();
     } catch (error) {
-      // If Redis is down, fail open (allow the request)
-      logger.error({ err: error }, "Rate limit Redis error — failing open");
+      logger.error(
+        { err: error, key, failClosed },
+        "Rate limit Redis error — activating fallback protection",
+      );
+
+      if (failClosed) {
+        return res.status(503).json({
+          error: "Service temporarily unavailable. Rate limiter offline.",
+        });
+      }
+
+      // In-memory sliding window fallback prevents unlimited abuse during Redis outages
+      const nowTs = Date.now();
+      const windowStartTs = nowTs - windowSec * 1000;
+      const history = (memoryFallbackStore.get(key) || []).filter(
+        (t) => t > windowStartTs,
+      );
+
+      if (history.length >= maxRequests) {
+        const retryAfter = Math.ceil(windowSec / 2);
+        res.setHeader("Retry-After", retryAfter);
+        return res.status(429).json({
+          error: "Too many requests. Please slow down.",
+          retryAfter,
+        });
+      }
+
+      history.push(nowTs);
+      memoryFallbackStore.set(key, history);
       next();
     }
   };

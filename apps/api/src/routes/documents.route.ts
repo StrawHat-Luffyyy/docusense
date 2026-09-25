@@ -4,12 +4,14 @@ import {
   injectTenantContext,
 } from "../middleware/auth.middleware.js";
 import { s3Service } from "../services/s3.service.js";
+import { pineconeService } from "../services/pinecone.service.js";
 import { db } from "../config/database.js";
 import { randomUUID } from "crypto";
 import { enqueueDocumentProcessing } from "../queues/ingestion.queue.js";
 import crypto from "crypto";
 import { rateLimiters } from "../middleware/rateLimit.middleware.js";
 import { AppError } from "../middleware/errorHandler.js";
+import { logger } from "../utils/logger.js";
 
 export const documentsRouter = express.Router();
 
@@ -26,11 +28,9 @@ documentsRouter.post(
         return res.status(400).json({ error: "Filename is required" });
       }
       if (!contentType || !ALLOWED_MIME_TYPES.includes(contentType)) {
-        return res
-          .status(400)
-          .json({
-            error: "File type not supported. Only PDF files are allowed.",
-          });
+        return res.status(400).json({
+          error: "File type not supported. Only PDF files are allowed.",
+        });
       }
       if (!sizeBytes || typeof sizeBytes !== "number" || sizeBytes <= 0) {
         return res
@@ -225,6 +225,7 @@ documentsRouter.get(
           isPublic: true,
           sharingToken: true,
           pageCount: true,
+          wordCount: true,
           chunkCount: true,
           sizeBytes: true,
           mimeType: true,
@@ -241,7 +242,17 @@ documentsRouter.get(
   },
 );
 /**
- * Delete a document, its S3 object, and decrement tenant usage
+ * Delete a document, its S3 object, Pinecone vectors, and decrement tenant usage.
+ *
+ * Ordering:
+ *   1. Fetch chunk IDs from DB (needed to identify Pinecone vectors)
+ *   2. Delete vectors from Pinecone (mandatory — failure aborts the operation)
+ *   3. Delete S3 object (best-effort — orphaned files are acceptable)
+ *   4. Delete DB rows in a transaction (cascades to DocumentChunk)
+ *
+ * Pinecone deletion is NOT best-effort: leaving orphaned vectors would cause
+ * stale results in future searches. The operation is safe to retry since
+ * Pinecone deletes are idempotent.
  */
 documentsRouter.delete(
   "/:id",
@@ -260,13 +271,29 @@ documentsRouter.delete(
         return res.status(404).json({ error: "Document not found" });
       }
 
-      // Best-effort S3 cleanup — don't block DB deletion if this fails
+      // 1. Fetch chunk IDs before DB deletion (cascading delete erases them)
+      const chunks = await db.documentChunk.findMany({
+        where: { documentId: id },
+        select: { id: true },
+      });
+      const chunkIds = chunks.map((c) => c.id);
+
+      // 2. Delete vectors from Pinecone (mandatory — abort on failure)
+      if (chunkIds.length > 0) {
+        await pineconeService.deleteDocumentVectors(tenantId, id, chunkIds);
+      }
+
+      // 3. Best-effort S3 cleanup — don't block DB deletion if this fails
       try {
         await s3Service.deleteObject(document.storageKey);
       } catch (s3Error) {
-        console.error("Failed to delete S3 object:", s3Error);
+        logger.error(
+          { err: s3Error, documentId: id, storageKey: document.storageKey },
+          "Failed to delete S3 object — continuing with DB deletion",
+        );
       }
 
+      // 4. Delete DB rows (cascades to DocumentChunk) + decrement usage
       await db.$transaction([
         db.document.delete({ where: { id } }), // cascades to DocumentChunk
         db.tenantUsage.update({

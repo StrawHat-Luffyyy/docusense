@@ -64,6 +64,10 @@ const worker = new Worker(
         embeddings,
       );
 
+      const wordCount = rawText
+        ? rawText.trim().split(/\s+/).filter(Boolean).length
+        : 0;
+
       await db.document.update({
         where: {
           id: documentId,
@@ -71,6 +75,7 @@ const worker = new Worker(
         data: {
           status: "INDEXED",
           pageCount: pdfData.numpages,
+          wordCount,
           chunkCount: chunksWithPages.length,
           indexedAt: new Date(),
         },

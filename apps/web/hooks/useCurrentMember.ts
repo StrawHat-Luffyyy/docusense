@@ -6,9 +6,16 @@ export function useCurrentMember() {
     return null;
   }
   const role = membership?.role;
+  const roleLower = (role || "").toLowerCase();
 
-  const isOwner = role === "org:admin" && membership?.role === "org:admin";
-  const isAdmin = role === "org:admin";
+  const isOwner =
+    roleLower === "org:admin:owner" ||
+    roleLower === "org:creator" ||
+    roleLower === "org:owner" ||
+    roleLower.includes("owner") ||
+    roleLower.includes("creator");
+
+  const isAdmin = isOwner || role === "org:admin";
   const isMember = role === "org:member";
 
   return {

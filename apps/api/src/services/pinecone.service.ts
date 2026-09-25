@@ -45,4 +45,42 @@ export const pineconeService = {
     }
     logger.info(`Successfully upserted vectors for document ${documentId}`);
   },
+
+  /**
+   * Deletes all vectors belonging to a document from its tenant namespace.
+   *
+   * Vector IDs in Pinecone match DocumentChunk UUIDs from Postgres.
+   * Callers must provide the chunk IDs *before* deleting the DB rows,
+   * since cascading DB deletion would erase the ID references.
+   *
+   * Idempotent — deleting non-existent IDs is a no-op in Pinecone.
+   */
+  async deleteDocumentVectors(
+    tenantId: string,
+    documentId: string,
+    chunkIds: string[],
+  ): Promise<void> {
+    if (chunkIds.length === 0) {
+      logger.debug(
+        { documentId },
+        "No chunk IDs to delete from Pinecone — skipping",
+      );
+      return;
+    }
+
+    logger.debug(
+      `Deleting ${chunkIds.length} vectors from Pinecone namespace: ${tenantId} for document: ${documentId}`,
+    );
+
+    const DELETE_BATCH_SIZE = 1000;
+    for (let i = 0; i < chunkIds.length; i += DELETE_BATCH_SIZE) {
+      const batch = chunkIds.slice(i, i + DELETE_BATCH_SIZE);
+      await index.namespace(tenantId).deleteMany({ ids: batch });
+    }
+
+    logger.info(
+      { documentId, vectorCount: chunkIds.length },
+      `Successfully deleted vectors for document ${documentId}`,
+    );
+  },
 };

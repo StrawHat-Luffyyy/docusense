@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@clerk/nextjs";
 import {
   Plus,
   Trash2,
@@ -96,7 +95,6 @@ function getRelativeTime(dateStr: string): string {
 }
 
 export default function DashboardPage() {
-  const { getToken } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [sharingDoc, setSharingDoc] = useState<Document | null>(null);
@@ -142,14 +140,8 @@ export default function DashboardPage() {
     setDeletingId(docId);
     setDocToDelete(null);
     try {
-      const token = await getToken();
-      const res = await fetch(`/api/documents/${docId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setDocuments((prev) => prev.filter((d) => d.id !== docId));
-      }
+      await apiClient.delete(`/api/documents/${docId}`);
+      setDocuments((prev) => prev.filter((d) => d.id !== docId));
     } catch (error) {
       console.error("Failed to delete document:", error);
     } finally {
