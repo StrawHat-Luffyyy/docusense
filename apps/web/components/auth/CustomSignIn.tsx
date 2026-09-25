@@ -27,6 +27,7 @@ export function CustomSignIn() {
         redirectUrl: "/sso-callback",
         redirectUrlComplete: "/dashboard",
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .catch((err: any) => {
         setLoading(false);
         setError(err.errors?.[0]?.message || "An error occurred with OAuth.");
@@ -62,6 +63,7 @@ export function CustomSignIn() {
         );
         setLoading(false);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setLoading(false);
       console.error("Sign in error:", err);

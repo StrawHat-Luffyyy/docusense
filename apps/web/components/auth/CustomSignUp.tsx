@@ -30,6 +30,7 @@ export function CustomSignUp() {
         redirectUrl: "/sso-callback",
         redirectUrlComplete: "/dashboard",
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .catch((err: any) => {
         setLoading(false);
         setError(err.errors?.[0]?.message || "An error occurred with OAuth.");
@@ -57,6 +58,7 @@ export function CustomSignUp() {
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setPendingVerification(true);
       setLoading(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setLoading(false);
       console.error("Sign up error:", err);
@@ -92,6 +94,7 @@ export function CustomSignUp() {
         setError("Verification incomplete. Please try again.");
         setLoading(false);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setLoading(false);
       console.error("Verification error:", err);
