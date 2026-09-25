@@ -619,29 +619,6 @@ export default function ChatInterface({
                   </button>
                 </div>
               </form>
-
-              <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <button
-                  onClick={() => setInput("Summarize the most recent document")}
-                  className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm text-zinc-400 hover:bg-white/10 hover:text-zinc-200 transition-colors"
-                >
-                  Summarize the latest document
-                </button>
-                <button
-                  onClick={() =>
-                    setInput("What are the key security requirements?")
-                  }
-                  className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm text-zinc-400 hover:bg-white/10 hover:text-zinc-200 transition-colors"
-                >
-                  Find security requirements
-                </button>
-                <button
-                  onClick={() => setInput("Extract the main action items")}
-                  className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm text-zinc-400 hover:bg-white/10 hover:text-zinc-200 transition-colors"
-                >
-                  Extract action items
-                </button>
-              </div>
             </div>
 
             {documents.length === 0 && (
